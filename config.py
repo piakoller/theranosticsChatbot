@@ -5,9 +5,9 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
-LLM_TEMPERATURE = 0.0 
-MAX_TOKENS = 1000  # Much longer responses for detailed explanations
-NUM_CTX = 8192  # Larger context window
+LLM_TEMPERATURE = 0.1  # Slightly higher for more natural responses
+MAX_TOKENS = 500  # Reduced for faster responses - still good for most queries
+NUM_CTX = 4096  # Smaller context window for faster processing
 MODEL_KWARGS = {
     "temperature": LLM_TEMPERATURE,
     "max_tokens": MAX_TOKENS,

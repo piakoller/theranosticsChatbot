@@ -11,6 +11,15 @@ from config import (
     BACKUP_MODELS,
 )
 
+# Load CSS from external file
+def load_css():
+    try:
+        with open("style.css", "r", encoding="utf-8") as f:
+            return f.read()
+    except FileNotFoundError:
+        print("⚠️  style.css not found, using no custom CSS")
+        return ""
+
 # Module-level variable to track current active model
 current_model = OPENROUTER_MODEL
 
@@ -37,29 +46,23 @@ def generate_openrouter_response(message, history):
     for i, model in enumerate(models_to_try):
         try:
             # Patient education focused system prompt
-            system_prompt = """You are a compassionate and knowledgeable AI assistant specializing in patient education about theranostics, nuclear medicine, and cancer treatments. Your role is to help patients and their families understand complex medical concepts in simple, reassuring terms.
-
-**Your Expertise Areas:**
-- Theranostic treatments (diagnosis + therapy combined)
-- Nuclear medicine procedures and imaging
-- Radiopharmaceuticals and how they work
-- Treatment processes and what to expect
-- Side effects, safety, and preparation instructions
-- Benefits and risks of different treatments
+            system_prompt = """You are a compassionate AI assistant specializing in patient education about theranostics and nuclear medicine. Help patients understand medical concepts in simple, reassuring terms.
 
 **Communication Guidelines:**
-1. **Use simple, everyday language** - avoid complex medical jargon
-2. **Be reassuring and empathetic** - acknowledge patient concerns and fears
-3. **Explain step-by-step** - break down complex processes into easy steps
-4. **Use analogies and comparisons** - relate to familiar concepts when helpful
-5. **Focus on practical information** - what patients will experience, feel, or need to do
-6. **Address common concerns** - safety, effectiveness, side effects, recovery
-7. **Encourage questions** - remind patients to discuss with their medical team
-8. **Be supportive** - offer hope while being realistic about treatments
+1. **Keep answers concise** - Provide clear, focused responses (2-4 sentences for simple questions)
+2. **Use simple language** - Avoid medical jargon, explain in everyday terms
+3. **Be reassuring and empathetic** - Acknowledge concerns with understanding
+4. **For complex topics** - Give a brief overview, then encourage: "Would you like me to explain any specific part in more detail?"
+5. **End with engagement** - Ask "What specific aspect would you like to know more about?" or "Do you have questions about [specific part]?"
+6. **Remind about medical team** - Always note they should discuss specifics with their healthcare providers
 
-**Target Audience:** Patients, families, and caregivers who want to understand their treatment options and what to expect.
+**Response Style:**
+- Start with a direct, simple answer
+- Add 1-2 key points if needed  
+- For complex topics: briefly summarize, then invite follow-up questions
+- Always end by encouraging further questions or discussion with their medical team
 
-**Important:** Always remind patients that this information is educational and they should discuss specific medical decisions with their healthcare team. Provide clear, caring explanations that help reduce anxiety and improve understanding."""
+**Target Audience:** Patients, families, and caregivers seeking clear, digestible information about their treatment options."""
 
             # Prepare conversation context with enhanced message formatting
             messages = [
@@ -211,47 +214,69 @@ def chatbot_response(message, history):
         return random.choice(fallback_responses)
 
 
-# Create the Gradio interface
-with gr.Blocks(title="Theranostics Chatbot", theme=gr.themes.Soft()) as demo:
-    # Custom CSS for ChatGPT-like look
-    gr.HTML("""
-    <style>
-    body { background: #343541 !important; }
-    #chatbot { background: #444654 !important; border-radius: 16px; }
-    .message.user { background: #40414f !important; color: #fff !important; border-radius: 12px 12px 0 12px; margin: 8px 0; }
-    .message.assistant { background: #343541 !important; color: #fff !important; border-radius: 12px 12px 12px 0; margin: 8px 0; }
-    .gradio-container { max-width: 700px !important; margin: 0 auto !important; }
-    .gr-button { border-radius: 50% !important; min-width: 40px !important; min-height: 40px !important; padding: 0 !important; }
-    .gr-button svg { margin: 0 auto; }
-    .gr-textbox { border-radius: 16px !important; }
-    </style>
-    """)
-    # Header
-    gr.Markdown("""
-    <div style='text-align:center; color:#fff; font-size:2em; font-weight:bold; margin-top:10px;'>Theranostics Chatbot</div>
-    <div style='text-align:center; color:#bdbdbd; font-size:1.1em; margin-bottom:10px;'>Your AI Assistant for Theranostics Research and Applications</div>
-    <div style='text-align:center; color:#bdbdbd; font-size:1em; margin-bottom:20px;'>Welcome! This chatbot is here to help you understand theranostics and nuclear medicine treatments.<br>Ask questions about your treatment options, what to expect, or how these therapies work.<br><b>Always discuss your specific situation with your medical team.</b></div>
-    """)
+# Create the Gradio interface with ChatGPT-style CSS
+with gr.Blocks(
+    title="Theranostics Chatbot", 
+    theme=gr.themes.Soft(),
+    css=load_css()
+) as demo:
+    # Modern header with logo space
+    with gr.Row(elem_classes="header-container"):
+        with gr.Column():
+            with gr.Row(elem_classes="logo-section"):
+                gr.HTML("""
+                <div>
+                    <h1 class="main-title">🧬 Theranostics Assistant</h1>
+                    <p class="subtitle">AI-Powered Patient Education & Support</p>
+                </div>
+                <div class="welcome-message">
+                    <h3 style="margin-top: 0; color: #1f2937; font-size: 1.2rem;">Welcome to Your Theranostics Guide</h3>
+                    <p style="margin: 0.5rem 0; color: #4b5563; line-height: 1.6;">
+                        I'm here to help you understand theranostics and nuclear medicine treatments in simple, clear terms. 
+                        Feel free to ask about treatment options, what to expect, safety concerns, or any other questions you may have.
+                    </p>
+                    <p style="margin: 0.5rem 0 0 0; color: #6b7280; font-size: 0.9rem; font-style: italic;">
+                        💡 Remember: This information is educational. Always discuss your specific situation with your healthcare team.
+                    </p>
+                </div>
+                """)
 
-    # Example questions for patients
-    with gr.Accordion("💡 Common Questions", open=False):
+    # Example questions with improved styling
+    with gr.Accordion("💡 Common Questions", open=False, elem_classes="questions-accordion"):
+        gr.HTML("""
+        <p style="margin: 0 0 1rem 0; color: #6b7280; font-size: 0.95rem;">
+            Click any question below to get started, or type your own question in the chat.
+        </p>
+        """)
         with gr.Row():
             with gr.Column(scale=1):
-                q1_btn = gr.Button("What is theranostics?", size="sm", variant="secondary")
-                q2_btn = gr.Button("Is nuclear medicine safe?", size="sm", variant="secondary")
-                q3_btn = gr.Button("What to expect during treatment", size="sm", variant="secondary")
+                q1_btn = gr.Button("🔬 What is theranostics?", size="sm", variant="secondary")
+                q2_btn = gr.Button("🛡️ Is nuclear medicine safe?", size="sm", variant="secondary")
+                q3_btn = gr.Button("📋 What to expect during treatment", size="sm", variant="secondary")
             with gr.Column(scale=1):
-                q4_btn = gr.Button("Side effects and recovery", size="sm", variant="secondary")
-                q5_btn = gr.Button("How effective is this treatment?", size="sm", variant="secondary")
-                q6_btn = gr.Button("How should I prepare?", size="sm", variant="secondary")
+                q4_btn = gr.Button("⚕️ Side effects and recovery", size="sm", variant="secondary")
+                q5_btn = gr.Button("📊 How effective is this treatment?", size="sm", variant="secondary")
+                q6_btn = gr.Button("📝 How should I prepare?", size="sm", variant="secondary")
             with gr.Column(scale=1):
-                q7_btn = gr.Button("Will I be radioactive?", size="sm", variant="secondary")
+                q7_btn = gr.Button("☢️ Will I be radioactive?", size="sm", variant="secondary")
 
     # Show model status with improved styling
-    if openrouter_available:
-        gr.Markdown(f"🟢 **AI Model:** {current_model}")
-    else:
-        gr.Markdown("🟡 **Status:** Running in fallback mode (set OPENROUTER_API_KEY for full functionality)")
+    with gr.Row():
+        with gr.Column():
+            if openrouter_available:
+                gr.HTML(f"""
+                <div class="status-indicator">
+                    <span style="color: #059669; font-weight: 600;">🟢 AI Model Active:</span> 
+                    <span style="color: #374151; font-family: monospace; font-size: 0.9rem;">{current_model.split('/')[-1]}</span>
+                </div>
+                """)
+            else:
+                gr.HTML("""
+                <div class="status-indicator">
+                    <span style="color: #d97706; font-weight: 600;">🟡 Fallback Mode:</span> 
+                    <span style="color: #374151;">Limited functionality - API key required</span>
+                </div>
+                """)
 
     # Enhanced chatbot interface
     chatbot = gr.Chatbot(
@@ -260,23 +285,26 @@ with gr.Blocks(title="Theranostics Chatbot", theme=gr.themes.Soft()) as demo:
         height=500,
         show_copy_button=True,
         show_share_button=False,
-        placeholder="Start a conversation about theranostics...",
-        type="messages"  # Use OpenAI-style format instead of deprecated tuples
+        placeholder="💬 Start a conversation about theranostics...",
+        type="messages",
+        avatar_images=("👤", "🤖")
     )
 
-    # Input area with improved styling
-    with gr.Row():
+    # ChatGPT-style input area with enhanced design
+    with gr.Row(elem_classes="input-row"):
         msg = gr.Textbox(
-            placeholder="Message Theranostics Chatbot...",
+            placeholder="💬 Ask me anything about theranostics and nuclear medicine...",
             container=False,
-            scale=7,
+            scale=1,
             lines=1,
-            show_label=False
+            show_label=False,
+            elem_classes="chat-input"
         )
-        submit_btn = gr.Button("", scale=1, variant="primary", size="sm", icon="🚀", elem_id="send-btn")
+        submit_btn = gr.Button("↑", size="sm", variant="primary", elem_classes="send-button", scale=0)
     
+    # Clear button with better styling
     with gr.Row():
-        clear_btn = gr.Button("🗑️ Clear Chat", scale=1, variant="secondary")
+        clear_btn = gr.Button("🗑️ Clear Conversation", size="sm", variant="secondary", elem_classes="clear-button")
 
     # Example question click handlers
     def set_question(question):
