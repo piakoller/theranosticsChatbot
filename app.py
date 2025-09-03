@@ -213,16 +213,24 @@ def chatbot_response(message, history):
 
 # Create the Gradio interface
 with gr.Blocks(title="Theranostics Chatbot", theme=gr.themes.Soft()) as demo:
-    # Header with improved styling
-    gr.Markdown("""
-    # Theranostics Chatbot
-    ### Your AI Assistant for Theranostics Research and Applications
+    # Custom CSS for ChatGPT-like look
+    gr.HTML("""
+    <style>
+    body { background: #343541 !important; }
+    #chatbot { background: #444654 !important; border-radius: 16px; }
+    .message.user { background: #40414f !important; color: #fff !important; border-radius: 12px 12px 0 12px; margin: 8px 0; }
+    .message.assistant { background: #343541 !important; color: #fff !important; border-radius: 12px 12px 12px 0; margin: 8px 0; }
+    .gradio-container { max-width: 700px !important; margin: 0 auto !important; }
+    .gr-button { border-radius: 50% !important; min-width: 40px !important; min-height: 40px !important; padding: 0 !important; }
+    .gr-button svg { margin: 0 auto; }
+    .gr-textbox { border-radius: 16px !important; }
+    </style>
     """)
-    
+    # Header
     gr.Markdown("""
-    **Welcome!** This chatbot is here to help you understand theranostics and nuclear medicine treatments. 
-    Ask questions about your treatment options, what to expect, or how these therapies work. 
-    Remember to always discuss your specific situation with your medical team.
+    <div style='text-align:center; color:#fff; font-size:2em; font-weight:bold; margin-top:10px;'>Theranostics Chatbot</div>
+    <div style='text-align:center; color:#bdbdbd; font-size:1.1em; margin-bottom:10px;'>Your AI Assistant for Theranostics Research and Applications</div>
+    <div style='text-align:center; color:#bdbdbd; font-size:1em; margin-bottom:20px;'>Welcome! This chatbot is here to help you understand theranostics and nuclear medicine treatments.<br>Ask questions about your treatment options, what to expect, or how these therapies work.<br><b>Always discuss your specific situation with your medical team.</b></div>
     """)
 
     # Example questions for patients
@@ -259,13 +267,13 @@ with gr.Blocks(title="Theranostics Chatbot", theme=gr.themes.Soft()) as demo:
     # Input area with improved styling
     with gr.Row():
         msg = gr.Textbox(
-            placeholder="Ask me about your treatment, side effects, what to expect, or any concerns...",
+            placeholder="Message Theranostics Chatbot...",
             container=False,
             scale=7,
-            label="Your Question",
-            lines=1
+            lines=1,
+            show_label=False
         )
-        submit_btn = gr.Button("Send", scale=1, variant="primary", size="lg")
+        submit_btn = gr.Button("", scale=1, variant="primary", size="sm", icon="🚀", elem_id="send-btn")
     
     with gr.Row():
         clear_btn = gr.Button("🗑️ Clear Chat", scale=1, variant="secondary")
