@@ -293,18 +293,14 @@ with gr.Blocks(
     # ChatGPT-style input area with enhanced design
     with gr.Row(elem_classes="input-row"):
         msg = gr.Textbox(
-            placeholder="💬 Ask me anything about theranostics and nuclear medicine...",
+            placeholder="💬 Ask anything...",
             container=False,
             scale=1,
             lines=1,
             show_label=False,
             elem_classes="chat-input"
         )
-        submit_btn = gr.Button("↑", size="sm", variant="primary", elem_classes="send-button", scale=0)
-    
-    # Clear button with better styling
-    with gr.Row():
-        clear_btn = gr.Button("🗑️ Clear Conversation", size="sm", variant="secondary", elem_classes="clear-button")
+        submit_btn = gr.Button("˄", size="sm", variant="primary", elem_classes="send-button", scale=0)
 
     # Example question click handlers
     def set_question(question):
@@ -352,7 +348,6 @@ with gr.Blocks(
     submit_btn.click(user_message, [msg, chatbot], [msg, chatbot], queue=False).then(
         bot_message, chatbot, chatbot
     )
-    clear_btn.click(lambda: ([], ""), outputs=[chatbot, msg], queue=False)
     
     # Example question button handlers
     q1_btn.click(
