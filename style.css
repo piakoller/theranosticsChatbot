@@ -218,6 +218,80 @@
     transition: all 0.2s ease !important;
 }
 
+/* Form integration specific styling */
+.forms-container iframe {
+    border: none !important;
+    border-radius: 0.75rem !important;
+}
+
+.forms-container {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+    border: 1px solid #e5e7eb !important;
+}
+
+/* Tab styling */
+.gradio-container .gr-tab-nav {
+    background: white !important;
+    border-radius: 12px 12px 0 0 !important;
+    padding: 0.5rem !important;
+    border: 1px solid #e2e8f0 !important;
+    border-bottom: none !important;
+}
+
+.gradio-container .gr-tab-nav button {
+    background: transparent !important;
+    border: none !important;
+    border-radius: 8px !important;
+    padding: 0.75rem 1.5rem !important;
+    margin: 0 0.25rem !important;
+    color: #6b7280 !important;
+    font-weight: 500 !important;
+    transition: all 0.2s ease !important;
+}
+
+.gradio-container .gr-tab-nav button[aria-selected="true"] {
+    background: #3b82f6 !important;
+    color: white !important;
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3) !important;
+}
+
+.gradio-container .gr-tab-nav button:hover:not([aria-selected="true"]) {
+    background: #f3f4f6 !important;
+    color: #374151 !important;
+}
+
+/* Form help response styling */
+.form-help-response {
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 8px !important;
+    padding: 1rem !important;
+    margin-top: 1rem !important;
+    font-family: inherit !important;
+}
+
+/* Combined view specific adjustments */
+#combined-chatbot {
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 12px !important;
+    background: white !important;
+}
+
+/* Tab content area */
+.gradio-container .gr-tab-item {
+    background: white !important;
+    border: 1px solid #e2e8f0 !important;
+    border-top: none !important;
+    border-radius: 0 0 12px 12px !important;
+    padding: 2rem !important;
+    margin-bottom: 1rem !important;
+}
+
+/* Questions accordion in form context */
+.questions-accordion {
+    margin: 1rem 0 2rem 0 !important;
+}
+
 /* Override any remaining Gradio defaults */
 [data-testid*="textbox"] {
     border-radius: 0 !important;

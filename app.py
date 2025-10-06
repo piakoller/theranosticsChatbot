@@ -278,29 +278,197 @@ with gr.Blocks(
                 </div>
                 """)
 
-    # Enhanced chatbot interface
-    chatbot = gr.Chatbot(
+    # Main content area with tabs for chatbot and forms
+    with gr.Tabs(selected=0) as tabs:
+        with gr.TabItem("💬 Chat Assistant", elem_id="chat-tab"):
+            # Enhanced chatbot interface
+            chatbot = gr.Chatbot(
+                value=[],
+                elem_id="chatbot",
+                height=500,
+                show_copy_button=True,
+                show_share_button=False,
+                placeholder="💬 Start a conversation about theranostics...",
+                type="messages",
+                avatar_images=("👤", "🤖")
+            )
+
+            # ChatGPT-style input area with enhanced design
+            with gr.Row(elem_classes="input-row"):
+                msg = gr.Textbox(
+                    placeholder="💬 Ask anything...",
+                    container=False,
+                    scale=1,
+                    lines=1,
+                    show_label=False,
+                    elem_classes="chat-input"
+                )
+                submit_btn = gr.Button("˄", size="sm", variant="primary", elem_classes="send-button", scale=0)
+
+        with gr.TabItem("📋 Feedback Form", elem_id="form-tab"):
+            # Instructions for the embedded form
+            gr.HTML("""
+            <div style="background-color: #f8fafc; border-left: 4px solid #3b82f6; padding: 1rem; margin: 1rem 0; border-radius: 0.5rem;">
+                <h3 style="margin: 0 0 0.5rem 0; color: #1e40af; font-size: 1.1rem;">📝 Patient Feedback & Evaluation</h3>
+                <p style="margin: 0; color: #475569; line-height: 1.5;">
+                    Please complete this form to help us improve our theranostics education and support services. 
+                    If you need help with any questions, you can switch to the Chat Assistant tab to ask our AI for clarification.
+                </p>
+            </div>
+            """)
+            
+            # Microsoft Forms iframe
+            forms_iframe = gr.HTML("""
+            <div class="forms-container" style="width: 100%; height: 700px; border: 1px solid #e5e7eb; border-radius: 0.75rem; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                <iframe 
+                    src="https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=ejgA1C8h6kOsf3eqEteXftmzMG5Y4MFIriRmLy67GRZUNkk0RzhGWjJEUTFQSFhUVVlXRlVGUU83MC4u&embed=true" 
+                    width="100%" 
+                    height="100%" 
+                    frameborder="0" 
+                    marginheight="0" 
+                    marginwidth="0"
+                    style="border: none; max-width:100%; max-height:100vh"
+                    allowfullscreen 
+                    webkitallowfullscreen 
+                    mozallowfullscreen 
+                    msallowfullscreen
+                    title="Patient Feedback Form">
+                    Your browser does not support iframes. Please visit the form directly: 
+                    <a href="https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=ejgA1C8h6kOsf3eqEteXftmzMG5Y4MFIriRmLy67GRZUNkk0RzhGWjJEUTFQSFhUVVlXRlVGUU83MC4u&embed=true" target="_blank">Open Form</a>
+                </iframe>
+            </div>
+            """)
+            
+            # Help section for form assistance
+            with gr.Accordion("🤔 Need Help with the Form?", open=False):
+                gr.HTML("""
+                <div style="padding: 1rem;">
+                    <p style="margin: 0 0 1rem 0; color: #374151;">
+                        If you're unsure about any question in the form, here are some quick help options:
+                    </p>
+                </div>
+                """)
+                
+                with gr.Row():
+                    form_help_q1 = gr.Button("❓ What is treatment satisfaction?", size="sm", variant="secondary")
+                    form_help_q2 = gr.Button("❓ How to rate side effects?", size="sm", variant="secondary")
+                    form_help_q3 = gr.Button("❓ What information should I share?", size="sm", variant="secondary")
+                
+                # Quick response area for form help
+                form_help_response = gr.Textbox(
+                    label="Quick Help Response",
+                    interactive=False,
+                    visible=False,
+                    elem_classes="form-help-response"
+                )
+
+        with gr.TabItem("📊 Combined View", elem_id="combined-tab"):
+            gr.HTML("""
+            <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 1rem; margin: 1rem 0; border-radius: 0.5rem;">
+                <h3 style="margin: 0 0 0.5rem 0; color: #92400e; font-size: 1.1rem;">🔄 Interactive Experience</h3>
+                <p style="margin: 0; color: #78350f; line-height: 1.5;">
+                    Use this view to interact with both the chatbot and form simultaneously. Ask questions about the form while filling it out!
+                </p>
+            </div>
+            """)
+            
+            # Section indicator buttons
+            gr.HTML("""
+            <div style="background-color: #f0f9ff; border: 1px solid #0ea5e9; padding: 1rem; margin: 1rem 0; border-radius: 0.5rem;">
+                <h4 style="margin: 0 0 0.5rem 0; color: #0369a1;">📍 Current Form Section</h4>
+                <p style="margin: 0 0 0.5rem 0; color: #075985; font-size: 0.9rem;">
+                    Click the section you're currently working on to get targeted assistance:
+                </p>
+            </div>
+            """)
+            
+            with gr.Row():
+                section_a_btn = gr.Button("📝 Section A: Demographics", size="sm", variant="secondary")
+                section_b_btn = gr.Button("🏥 Section B: Treatment Experience", size="sm", variant="secondary")
+                section_c_btn = gr.Button("💭 Section C: Feedback & Comments", size="sm", variant="primary")
+            
+            # Dynamic help message based on section
+            section_help = gr.HTML("""
+            <div id="section-help" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 0.5rem; padding: 1rem; margin: 1rem 0;">
+                <p style="margin: 0; color: #64748b; font-style: italic;">
+                    👆 Select a section above to get specific help and enable targeted chatbot assistance.
+                </p>
+            </div>
+            """, visible=True)
+            
+            with gr.Row(equal_height=True):
+                with gr.Column(scale=1):
+                    # Compact chatbot for combined view
+                    combined_chatbot = gr.Chatbot(
+                        value=[],
+                        elem_id="combined-chatbot",
+                        height=400,
+                        show_copy_button=True,
+                        show_share_button=False,
+                        placeholder="💬 Ask questions about the form...",
+                        type="messages",
+                        avatar_images=("👤", "🤖")
+                    )
+                    
+                    with gr.Row():
+                        combined_msg = gr.Textbox(
+                            placeholder="💬 Ask for help with the form...",
+                            container=False,
+                            scale=1,
+                            lines=1,
+                            show_label=False,
+                            elem_classes="chat-input"
+                        )
+                        combined_submit = gr.Button("˄", size="sm", variant="primary", elem_classes="send-button", scale=0)
+                
+                with gr.Column(scale=1):
+                    # Compact forms iframe for combined view
+                    combined_forms = gr.HTML("""
+                    <div class="forms-container" style="width: 100%; height: 450px; border: 1px solid #e5e7eb; border-radius: 0.75rem; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                        <iframe 
+                            src="https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=ejgA1C8h6kOsf3eqEteXftmzMG5Y4MFIriRmLy67GRZUNkk0RzhGWjJEUTFQSFhUVVlXRlVGUU83MC4u&embed=true" 
+                            width="100%" 
+                            height="100%" 
+                            frameborder="0" 
+                            marginheight="0" 
+                            marginwidth="0"
+                            style="border: none; max-width:100%; max-height:100vh"
+                            allowfullscreen 
+                            webkitallowfullscreen 
+                            mozallowfullscreen 
+                            msallowfullscreen
+                            title="Patient Feedback Form">
+                            Your browser does not support iframes. Please visit the form directly: 
+                            <a href="https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=ejgA1C8h6kOsf3eqEteXftmzMG5Y4MFIriRmLy67GRZUNkk0RzhGWjJEUTFQSFhUVVlXRlVGUU83MC4u&embed=true" target="_blank">Open Form</a>
+                        </iframe>
+                    </div>
+                    """)
+
+    # Keep the original standalone chatbot elements for backward compatibility (but make them invisible)
+    chatbot_hidden = gr.Chatbot(
         value=[],
-        elem_id="chatbot",
+        elem_id="chatbot-hidden",
         height=500,
         show_copy_button=True,
         show_share_button=False,
         placeholder="💬 Start a conversation about theranostics...",
         type="messages",
-        avatar_images=("👤", "🤖")
+        avatar_images=("👤", "🤖"),
+        visible=False
     )
 
-    # ChatGPT-style input area with enhanced design
-    with gr.Row(elem_classes="input-row"):
-        msg = gr.Textbox(
-            placeholder="💬 Ask anything...",
-            container=False,
-            scale=1,
-            lines=1,
-            show_label=False,
-            elem_classes="chat-input"
-        )
-        submit_btn = gr.Button("˄", size="sm", variant="primary", elem_classes="send-button", scale=0)
+    msg_hidden = gr.Textbox(
+        placeholder="💬 Ask anything...",
+        container=False,
+        scale=1,
+        lines=1,
+        show_label=False,
+        elem_classes="chat-input",
+        visible=False
+    )
+    submit_btn_hidden = gr.Button("˄", size="sm", variant="primary", elem_classes="send-button", scale=0, visible=False)
+
+
 
     # Example question click handlers
     def set_question(question):
@@ -311,6 +479,94 @@ with gr.Blocks(
         # Add the question directly to chat history without showing in input
         new_history = history + [{"role": "user", "content": question}]
         return "", new_history  # Empty string for input field, updated history for chat
+    
+    # Function to handle form help questions
+    def handle_form_help(question):
+        form_help_responses = {
+            "treatment_satisfaction": """**Treatment Satisfaction** refers to how pleased you are with your overall theranostic treatment experience. Consider factors like:
+            • How well your symptoms improved
+            • Communication with your medical team
+            • Comfort during procedures
+            • Whether your expectations were met
+            
+            Rate this honestly - your feedback helps improve care for future patients.""",
+            
+            "side_effects": """**Rating Side Effects:** Consider both severity and impact on your daily life:
+            • **Mild (1-3):** Barely noticeable, doesn't affect daily activities
+            • **Moderate (4-6):** Noticeable but manageable, some impact on activities  
+            • **Severe (7-10):** Significantly affects daily life, requires medical attention
+            
+            Include both physical effects (fatigue, nausea) and emotional impacts.""",
+            
+            "information_sharing": """**What Information to Share:** Be as detailed as comfortable:
+            • Specific symptoms you experienced and when
+            • How treatment affected your quality of life
+            • Any concerns or fears you had
+            • Suggestions for improving the patient experience
+            
+            Your honest feedback, both positive and negative, helps improve care for others."""
+        }
+        return form_help_responses.get(question, "I can help explain any part of the feedback form. What specific question would you like help with?")
+    
+    # Function to provide contextual chatbot responses for forms
+    def form_contextual_response(message, history, section="none"):
+        """Enhanced chatbot response that's aware of form context and current section"""
+        
+        # Base form context
+        form_context = """You are helping a patient who is filling out a feedback form about their theranostic treatment experience."""
+        
+        # Add section-specific context
+        if section == "a":
+            form_context += """ They are currently working on Section A (Demographics), which asks about basic information, medical history, and diagnosis. Help them understand what information to provide and why it's important."""
+        elif section == "b":
+            form_context += """ They are currently working on Section B (Treatment Experience), which focuses on their actual treatment experience, side effects, recovery, and ratings. Help them understand how to rate their experience and what factors to consider."""
+        elif section == "c":
+            form_context += """ They are currently working on Section C (Feedback & Comments), which asks for detailed feedback and suggestions. Encourage them to be honest and specific about their experience to help improve care for future patients."""
+        else:
+            form_context += """ They may ask questions about any part of the form including demographics, treatment experience, or feedback sections."""
+        
+        form_context += """
+        
+        Provide helpful, encouraging guidance while maintaining your patient education focus. Be specific about what information would be helpful to share and why it matters for improving theranostic care."""
+        
+        # Enhance the message with section context if relevant
+        if any(keyword in message.lower() for keyword in ['form', 'rating', 'satisfaction', 'feedback', 'questionnaire', 'survey', 'section']):
+            if section != "none":
+                enhanced_message = f"[Form Section {section.upper()} Help] {message}"
+            else:
+                enhanced_message = f"[Form Help Request] {message}"
+        else:
+            enhanced_message = message
+            
+        return chatbot_response(enhanced_message, history)
+    
+    # Function to update section help display
+    def update_section_help(section):
+        if section in section_help_content:
+            content = section_help_content[section]
+            tips_html = "".join([f"<li style='margin: 0.25rem 0; color: #374151;'>{tip}</li>" for tip in content["tips"]])
+            
+            html_content = f"""
+            <div style="background-color: {content['color']}; border-left: 4px solid {content['border']}; border-radius: 0.5rem; padding: 1rem; margin: 1rem 0;">
+                <h4 style="margin: 0 0 0.5rem 0; color: #1f2937; font-size: 1.1rem;">{content['title']}</h4>
+                <p style="margin: 0 0 0.75rem 0; color: #4b5563; line-height: 1.5;">{content['description']}</p>
+                <div style="margin: 0.5rem 0 0 0;">
+                    <p style="margin: 0 0 0.5rem 0; color: #6b7280; font-weight: 600; font-size: 0.9rem;">💡 Tips for this section:</p>
+                    <ul style="margin: 0; padding-left: 1.25rem; color: #374151;">
+                        {tips_html}
+                    </ul>
+                </div>
+            </div>
+            """
+            return html_content, section
+        else:
+            return """
+            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 0.5rem; padding: 1rem; margin: 1rem 0;">
+                <p style="margin: 0; color: #64748b; font-style: italic;">
+                    👆 Select a section above to get specific help and enable targeted chatbot assistance.
+                </p>
+            </div>
+            """, "none"
     
     # Define patient-focused questions
     questions = {
@@ -323,7 +579,47 @@ with gr.Blocks(
         "q7": "Will I be radioactive after treatment? Is it safe for my family?"
     }
 
-    # Handle message submission
+    # State variable to track current form section
+    current_section = gr.State("none")
+    
+    # Section-specific help content
+    section_help_content = {
+        "a": {
+            "title": "📝 Section A: Demographics",
+            "description": "This section asks about your basic information like age, gender, diagnosis, and treatment history.",
+            "tips": [
+                "Be accurate with dates and medical history",
+                "Include all relevant treatments you've received",
+                "Don't worry if you don't remember exact dates - approximate is fine"
+            ],
+            "color": "#dbeafe",
+            "border": "#3b82f6"
+        },
+        "b": {
+            "title": "🏥 Section B: Treatment Experience", 
+            "description": "This section focuses on your actual treatment experience, side effects, and recovery.",
+            "tips": [
+                "Rate based on your personal experience, not what you think is 'normal'",
+                "Include both physical and emotional impacts",
+                "Consider the entire treatment period, not just the procedure day"
+            ],
+            "color": "#f0fdf4",
+            "border": "#22c55e"
+        },
+        "c": {
+            "title": "💭 Section C: Feedback & Comments",
+            "description": "This section asks for your detailed feedback and suggestions for improvement.",
+            "tips": [
+                "Be honest about both positive and negative experiences",
+                "Share specific examples when possible",
+                "Think about what would have helped you feel more prepared or comfortable"
+            ],
+            "color": "#fef3c7",
+            "border": "#f59e0b"
+        }
+    }
+
+    # Handle message submission for main chat tab
     def user_message(message, history):
         if message.strip():
             return "", history + [{"role": "user", "content": message}]
@@ -341,7 +637,23 @@ with gr.Blocks(
                 return history + [{"role": "assistant", "content": bot_response}]
         return history
 
-    # Event handlers
+    # Handle message submission for combined view
+    def combined_user_message(message, history):
+        if message.strip():
+            return "", history + [{"role": "user", "content": message}]
+        return message, history
+
+    def combined_bot_message(history, section):
+        if history and len(history) > 0:
+            last_message = history[-1]
+            if last_message["role"] == "user":
+                user_msg = last_message["content"]
+                previous_history = history[:-1]
+                bot_response = form_contextual_response(user_msg, previous_history, section)
+                return history + [{"role": "assistant", "content": bot_response}]
+        return history
+
+    # Event handlers for main chat tab
     msg.submit(user_message, [msg, chatbot], [msg, chatbot], queue=False).then(
         bot_message, chatbot, chatbot
     )
@@ -349,7 +661,47 @@ with gr.Blocks(
         bot_message, chatbot, chatbot
     )
     
-    # Example question button handlers
+    # Event handlers for combined view
+    combined_msg.submit(combined_user_message, [combined_msg, combined_chatbot], [combined_msg, combined_chatbot], queue=False).then(
+        combined_bot_message, [combined_chatbot, current_section], combined_chatbot
+    )
+    combined_submit.click(combined_user_message, [combined_msg, combined_chatbot], [combined_msg, combined_chatbot], queue=False).then(
+        combined_bot_message, [combined_chatbot, current_section], combined_chatbot
+    )
+    
+    # Section button handlers
+    section_a_btn.click(
+        lambda: update_section_help("a"),
+        outputs=[section_help, current_section]
+    )
+    section_b_btn.click(
+        lambda: update_section_help("b"),
+        outputs=[section_help, current_section]
+    )
+    section_c_btn.click(
+        lambda: update_section_help("c"),
+        outputs=[section_help, current_section]
+    )
+    
+    # Form help button handlers
+    def show_form_help(help_type):
+        response = handle_form_help(help_type)
+        return gr.update(value=response, visible=True)
+    
+    form_help_q1.click(
+        lambda: show_form_help("treatment_satisfaction"),
+        outputs=[form_help_response]
+    )
+    form_help_q2.click(
+        lambda: show_form_help("side_effects"),
+        outputs=[form_help_response]
+    )
+    form_help_q3.click(
+        lambda: show_form_help("information_sharing"),
+        outputs=[form_help_response]
+    )
+    
+    # Example question button handlers (work with main chat tab)
     q1_btn.click(
         lambda history: handle_example_question(questions["q1"], history),
         inputs=[chatbot],
