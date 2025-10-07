@@ -31,27 +31,39 @@ class TheranosticsBot:
             return False
         return True
     
-    def _get_system_prompt(self):
-        """Get the system prompt for patient education"""
-        return """You are a compassionate AI assistant specializing in patient education about theranostics and nuclear medicine. Help patients understand medical concepts in simple, reassuring terms.
+    def _get_system_prompt(self, lang='en'):
+        """Get the system prompt for patient education, language-aware.
 
-**Communication Guidelines:**
-1. **Keep answers concise** - Provide clear, focused responses (2-4 sentences for simple questions)
-2. **Use simple language** - Avoid medical jargon, explain in everyday terms
-3. **Be reassuring and empathetic** - Acknowledge concerns with understanding
-4. **For complex topics** - Give a brief overview, then encourage: "Would you like me to explain any specific part in more detail?"
-5. **End with engagement** - Ask "What specific aspect would you like to know more about?" or "Do you have questions about [specific part]?"
-6. **Remind about medical team** - Always note they should discuss specifics with their healthcare providers
-
-**Response Style:**
-- Start with a direct, simple answer
-- Add 1-2 key points if needed  
-- For complex topics: briefly summarize, then invite follow-up questions
-- Always end by encouraging further questions or discussion with their medical team
-
-**Target Audience:** Patients, families, and caregivers seeking clear, digestible information about their treatment options."""
+        lang: 'en' or 'de'
+        """
+        if lang == 'de':
+            return (
+                "Sie sind ein mitfühlender KI-Assistent, spezialisiert auf Patientenaufklärung zu Theranostik und Nuklearmedizin. "
+                "Erklären Sie medizinische Konzepte verständlich, beruhigend und in Alltagssprache.\n\n"
+                "Kommunikationsrichtlinien:\n"
+                "1. Halten Sie Antworten kurz und klar (1-3 Sätze für einfache Fragen).\n"
+                "2. Vermeiden Sie Fachjargon; erklären Sie Begriffe einfach.\n"
+                "3. Seien Sie einfühlsam und beruhigend.\n"
+                "4. Bei komplexen Themen: kurze Übersicht geben und fragen, ob eine detailliertere Erklärung gewünscht ist.\n"
+                "5. Schließen Sie mit einer Einladung zu Nachfragen (z. B. 'Möchten Sie, dass ich einen bestimmten Teil genauer erkläre?').\n"
+                "6. Erinnern Sie daran, dass spezifische medizinische Fragen mit dem Behandlungsteam besprochen werden sollten.\n\n"
+                "Antwortstil: Kurz, klar, mit 1–2 wichtigen Punkten; immer zum Nachfragen einladen."
+            )
+        else:
+            return (
+                "You are a compassionate AI assistant specializing in patient education about theranostics and nuclear medicine. "
+                "Help patients understand medical concepts in simple, reassuring terms.\n\n"
+                "Communication Guidelines:\n"
+                "1. Keep answers concise (1-3 sentences for simple questions).\n"
+                "2. Use simple language; avoid jargon.\n"
+                "3. Be reassuring and empathetic.\n"
+                "4. For complex topics: give a brief overview, then offer more detail if requested.\n"
+                "5. End by inviting follow-up questions.\n"
+                "6. Remind users to discuss specific medical concerns with their healthcare team.\n\n"
+                "Response style: short, clear, 1–2 key points, encourage follow-up."
+            )
     
-    def generate_openrouter_response(self, message, history, context="main_chat", section=None):
+    def generate_openrouter_response(self, message, history, context="main_chat", section=None, lang='en'):
         """Generate response using OpenRouter API with automatic fallback to backup models"""
         
         # List of models to try (current active model first, then backups)
@@ -61,8 +73,9 @@ class TheranosticsBot:
         for i, model in enumerate(models_to_try):
             try:
                 # Prepare conversation context with enhanced message formatting
+                # Build system prompt according to requested language
                 messages = [
-                    {"role": "system", "content": self._get_system_prompt()}
+                    {"role": "system", "content": self._get_system_prompt(lang=lang)}
                 ]
                 if history:
                     # Include more context (last 5 exchanges instead of 3)
@@ -71,6 +84,10 @@ class TheranosticsBot:
                         if msg["role"] in ["user", "assistant"]:
                             messages.append(msg)
                 
+                # If German requested, add an explicit instruction to reply only in German
+                if lang == 'de':
+                    messages.append({"role": "system", "content": "Please respond only in German (Deutsch)."})
+
                 # Enhance the user's question with context if it's too brief
                 enhanced_message = message
                 if len(message.split()) < 5:  # If question is very short
@@ -121,7 +138,7 @@ class TheranosticsBot:
                         assistant_response = f"*I've switched to a backup model ({model_name}) to ensure I can help you.*\n\n{assistant_response}"
                     
                     # Log the conversation
-                    conversation_logger.log_conversation(message, assistant_response, context=context, section=section, model_used=model)
+                    conversation_logger.log_conversation(message, assistant_response, context=context, section=section, model_used=model, metadata={"lang": lang})
                     
                     return assistant_response
                 else:
@@ -220,14 +237,18 @@ class TheranosticsBot:
         ]
         return random.choice(fallback_responses)
     
-    def chatbot_response(self, message, history, context="main_chat", section=None):
+    def chatbot_response(self, message, history, context="main_chat", section=None, lang='en'):
         """Main chatbot function that uses OpenRouter or falls back to predefined responses"""
         if self.openrouter_available:
-            response = self.generate_openrouter_response(message, history, context, section)
+            response = self.generate_openrouter_response(message, history, context, section, lang=lang)
         else:
-            response = self.get_fallback_response()
+            # Provide language-appropriate fallback message
+            if lang == 'de':
+                response = "Der Dienst ist derzeit nicht verfügbar. Bitte versuchen Sie es später erneut."
+            else:
+                response = self.get_fallback_response()
             # Still log fallback responses
-            conversation_logger.log_conversation(message, response, context=context, section=section, model_used="fallback")
+            conversation_logger.log_conversation(message, response, context=context, section=section, model_used="fallback", metadata={"lang": lang})
         
         return response
     

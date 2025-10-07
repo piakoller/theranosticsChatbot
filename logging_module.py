@@ -10,6 +10,12 @@ import uuid
 from datetime import datetime
 from typing import Optional, Dict, Any, List
 
+# Control logging targets via environment variables:
+# ENABLE_MONGODB: if '1', attempt to log to MongoDB (default: '1')
+# ENABLE_FILE_LOGS: if '1', also write local JSON backups (default: '0')
+ENABLE_MONGODB = os.getenv("ENABLE_MONGODB", "1") == "1"
+ENABLE_FILE_LOGS = os.getenv("ENABLE_FILE_LOGS", "0") == "1"
+
 # Import MongoDB handler with graceful fallback
 try:
     from mongodb_handler import MongoDBHandler
@@ -26,21 +32,33 @@ class ConversationLogger:
         self.log_dir = log_dir
         self.session_id = str(uuid.uuid4())
         self.current_model = None  # Will be set by the chatbot
-        
-        # Ensure log directory exists
-        os.makedirs(log_dir, exist_ok=True)
-        
-        # Initialize MongoDB handler if available
+        # Configure logging backends according to env flags
         self.mongodb_handler = None
-        if MONGODB_AVAILABLE:
+
+        # Create log directory only if file logging is enabled
+        if ENABLE_FILE_LOGS:
             try:
-                self.mongodb_handler = MongoDBHandler()
-                print("🔄 Conversation logging system initialized with MongoDB")
-            except Exception as e:
-                print(f"⚠️ MongoDB initialization failed: {e}")
-                print("📝 Falling back to file-only logging")
+                os.makedirs(log_dir, exist_ok=True)
+            except Exception:
+                pass
+
+        # Initialize MongoDB handler if requested and available
+        if ENABLE_MONGODB:
+            if MONGODB_AVAILABLE:
+                try:
+                    self.mongodb_handler = MongoDBHandler()
+                    print("🔄 Conversation logging system initialized with MongoDB")
+                except Exception as e:
+                    print(f"⚠️ MongoDB initialization failed: {e}")
+                    # fall back to file logging if enabled
+                    if ENABLE_FILE_LOGS:
+                        print("📝 Falling back to file-only logging")
+            else:
+                print("⚠️ ENABLE_MONGODB is set but mongodb_handler is not available; MongoDB logging disabled")
         else:
-            print("📝 File-only conversation logging system initialized")
+            print("⚠️ MongoDB logging disabled via ENABLE_MONGODB=0")
+            if ENABLE_FILE_LOGS:
+                print("📝 File-only conversation logging enabled")
     
     def set_current_model(self, model_name: str):
         """Set the current AI model being used for conversations"""
@@ -66,6 +84,10 @@ class ConversationLogger:
         Returns:
             bool: True if logged successfully to at least one storage
         """
+        # If neither MongoDB nor local file logging is enabled, do nothing
+        if not (ENABLE_MONGODB or ENABLE_FILE_LOGS):
+            return False
+
         timestamp = datetime.now()
         
         # Prepare conversation data
@@ -104,13 +126,14 @@ class ConversationLogger:
             except Exception as e:
                 print(f"❌ MongoDB logging failed: {e}")
         
-        # Always maintain file backup
-        try:
-            file_success = self._log_to_file(conversation_data)
-            if file_success and not mongodb_success:
-                print(f"📝 Conversation logged to file backup (Session: {self.session_id[:8]}...)")
-        except Exception as e:
-            print(f"❌ File logging failed: {e}")
+        # Optionally maintain file backup if enabled
+        if ENABLE_FILE_LOGS:
+            try:
+                file_success = self._log_to_file(conversation_data)
+                if file_success and not mongodb_success:
+                    print(f"📝 Conversation logged to file backup (Session: {self.session_id[:8]}...)")
+            except Exception as e:
+                print(f"❌ File logging failed: {e}")
         
         # Return success if at least one storage method worked
         return mongodb_success or file_success
@@ -146,6 +169,10 @@ class ConversationLogger:
         Returns:
             str: Success message indicating where data was saved
         """
+        # Short-circuit if neither MongoDB nor file logging enabled
+        if not (ENABLE_MONGODB or ENABLE_FILE_LOGS):
+            return "Logging disabled"
+
         mongodb_success = False
         file_success = False
         
@@ -163,13 +190,14 @@ class ConversationLogger:
             except Exception as e:
                 print(f"❌ MongoDB form save failed: {e}")
         
-        # Always maintain file backup
-        try:
-            file_success = self._save_form_to_file(form_data_with_session)
-            if file_success and not mongodb_success:
-                print(f"📝 Form submission saved to file backup (Session: {self.session_id[:8]}...)")
-        except Exception as e:
-            print(f"❌ File form save failed: {e}")
+        # Optionally maintain file backup if enabled
+        if ENABLE_FILE_LOGS:
+            try:
+                file_success = self._save_form_to_file(form_data_with_session)
+                if file_success and not mongodb_success:
+                    print(f"📝 Form submission saved to file backup (Session: {self.session_id[:8]}...)")
+            except Exception as e:
+                print(f"❌ File form save failed: {e}")
         
         # Return appropriate message
         if mongodb_success and file_success:
@@ -200,6 +228,10 @@ class ConversationLogger:
     
     def get_session_conversations(self) -> List[Dict[str, Any]]:
         """Get all conversations for the current session"""
+        # If neither logging target is enabled, return empty list
+        if not (ENABLE_MONGODB or ENABLE_FILE_LOGS):
+            return []
+
         if self.mongodb_handler:
             try:
                 return self.mongodb_handler.get_session_conversations(self.session_id)
@@ -225,6 +257,9 @@ class ConversationLogger:
     
     def get_conversation_stats(self) -> Dict[str, Any]:
         """Get conversation statistics"""
+        if not (ENABLE_MONGODB or ENABLE_FILE_LOGS):
+            return {"total_conversations": 0}
+
         if self.mongodb_handler:
             try:
                 return self.mongodb_handler.get_conversation_stats()
@@ -246,6 +281,9 @@ class ConversationLogger:
             from datetime import datetime
             
             # Get all conversations
+            if not (ENABLE_MONGODB or ENABLE_FILE_LOGS):
+                return "❌ Logging disabled, no conversations to export"
+
             conversations = self.get_session_conversations()
             
             if not conversations:

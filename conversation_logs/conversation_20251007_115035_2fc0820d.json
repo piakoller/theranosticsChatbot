@@ -1,8 +1,0 @@
-{
-  "session_id": "2fc0820d-966d-402e-8b22-d12a7c51edd6",
-  "timestamp": "2025-10-07T11:50:35.179378",
-  "user_input": "test",
-  "bot_response": "*I've switched to a backup model (Qwen 2.5 Coder 32B Instruct) to ensure I can help you.*\n\nIt seems like your request is a bit broad. Could you please specify which test you are referring to? Are you asking about a particular medical test, like a blood test, imaging test, or something else? This will help me provide you with the most accurate and helpful information.",
-  "context": "main_chat",
-  "metadata": {}
-}

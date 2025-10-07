@@ -1,519 +1,339 @@
 """
-UI Components Module
-Handles Gradio interface components and layouts for the Theranostics Chatbot
+UI Components module for the Theranostics Chatbot User Study Application
+Contains reusable UI components and section layouts
 """
 
 import gradio as gr
-from chatbot import theranostics_bot
-from form_handlers import form_handler
-from logging_module import conversation_logger
-
+from styles import get_question_counter_html, get_task_instructions_html, get_section_header_html, get_study_header_html, get_progress_html
+from forms import StudyForms
 
 class UIComponents:
-    """Manages all UI components and layouts"""
+    """Contains reusable UI components for the study application"""
     
-    def __init__(self):
-        self.questions = {
-            "q1": "What are theranostics and how do they work in simple terms?",
-            "q2": "Is nuclear medicine safe for patients? What are the risks?",
-            "q3": "What should I expect during my theranostic treatment?",
-            "q4": "What are the common side effects and how long does recovery take?",
-            "q5": "How effective is theranostic treatment for my type of cancer?",
-            "q6": "How should I prepare for my nuclear medicine treatment?",
-            "q7": "Will I be radioactive after treatment? Is it safe for my family?"
-        }
-    
-    def load_css(self):
-        """Load CSS from external file"""
-        try:
-            with open("style.css", "r", encoding="utf-8") as f:
-                return f.read()
-        except FileNotFoundError:
-            print("⚠️  style.css not found, using no custom CSS")
-            return ""
-    
-    def create_header(self):
-        """Create the main header section"""
-        with gr.Row(elem_classes="header-container"):
-            with gr.Column():
-                with gr.Row(elem_classes="logo-section"):
-                    gr.HTML("""
-                    <div>
-                        <h1 class="main-title">🧬 Theranostics Assistant</h1>
-                        <p class="subtitle">AI-Powered Patient Education & Support</p>
-                    </div>
-                    <div class="welcome-message">
-                        <h3 style="margin-top: 0; color: #1f2937; font-size: 1.2rem;">Welcome to Your Theranostics Guide</h3>
-                        <p style="margin: 0.5rem 0; color: #4b5563; line-height: 1.6;">
-                            I'm here to help you understand theranostics and nuclear medicine treatments in simple, clear terms. 
-                            Feel free to ask about treatment options, what to expect, safety concerns, or any other questions you may have.
-                        </p>
-                        <p style="margin: 0.5rem 0 0 0; color: #6b7280; font-size: 0.9rem; font-style: italic;">
-                            💡 Remember: This information is educational. Always discuss your specific situation with your healthcare team.
-                        </p>
-                    </div>
-                    """)
-    
-    def create_example_questions(self):
-        """Create the example questions accordion"""
-        with gr.Accordion("💡 Common Questions", open=False, elem_classes="questions-accordion"):
-            gr.HTML("""
-            <p style="margin: 0 0 1rem 0; color: #6b7280; font-size: 0.95rem;">
-                Click any question below to get started, or type your own question in the chat.
-            </p>
-            """)
-            with gr.Row():
-                with gr.Column(scale=1):
-                    q1_btn = gr.Button("🔬 What is theranostics?", size="sm", variant="secondary")
-                    q2_btn = gr.Button("🛡️ Is nuclear medicine safe?", size="sm", variant="secondary")
-                    q3_btn = gr.Button("📋 What to expect during treatment", size="sm", variant="secondary")
-                with gr.Column(scale=1):
-                    q4_btn = gr.Button("⚕️ Side effects and recovery", size="sm", variant="secondary")
-                    q5_btn = gr.Button("📊 How effective is this treatment?", size="sm", variant="secondary")
-                    q6_btn = gr.Button("📝 How should I prepare?", size="sm", variant="secondary")
-                with gr.Column(scale=1):
-                    q7_btn = gr.Button("☢️ Will I be radioactive?", size="sm", variant="secondary")
+    @staticmethod
+    def create_header(lang='en'):
+        """Create the main application header (language-aware)"""
+        return gr.HTML(get_study_header_html(lang=lang))
         
-        return [q1_btn, q2_btn, q3_btn, q4_btn, q5_btn, q6_btn, q7_btn]
+    @staticmethod
+    def create_question_counter(lang='en', prefix=''):
+        """Create the question counter component for Section C (language/prefix aware)"""
+        elem = f"question_counter_display_{prefix}" if prefix else "question_counter_display"
+        return gr.HTML(
+            value=get_question_counter_html(0, lang=lang),
+            elem_id=elem
+        )
+
+class StudySections:
+    """Contains the complete section layouts for the study"""
     
-    def create_model_status(self):
-        """Create the model status display"""
-        with gr.Row():
-            with gr.Column():
-                if theranostics_bot.is_api_available():
-                    gr.HTML(f"""
-                    <div class="status-indicator">
-                        <span style="color: #059669; font-weight: 600;">🟢 AI Model Active:</span> 
-                        <span style="color: #374151; font-family: monospace; font-size: 0.9rem;">{theranostics_bot.get_current_model().split('/')[-1]}</span>
-                    </div>
-                    """)
+    @staticmethod
+    def create_study_layout(lang='en', prefix='en', initially_visible=False):
+        """Create the full study layout for a given language.
+
+        lang: 'en' or 'de'
+        prefix: string appended to elem_ids to avoid collisions when creating multiple layouts
+        initially_visible: whether the first section should be visible
+        """
+        
+        all_forms = {}
+        section_groups = {}
+
+        # Use individual visible sections (columns) rather than tabs so only the
+        # current section is shown. Each section container is stored in
+        # `section_groups` and visibility can be toggled by the event handler.
+        with gr.Column(elem_id=f"study_sections_{prefix}"):
+            vis_a = True if initially_visible else False
+            with gr.Column(visible=vis_a, elem_id=f"section_A_{prefix}") as tab_a:
+                section_groups['A'] = tab_a
+                gr.HTML(get_section_header_html('A', lang=lang))
+                forms_a = StudyForms.create_section_a_forms(lang=lang)
+                all_forms['A'] = forms_a
+
+                forms_a["consent"]
+                forms_a["participant_role"]
+                forms_a["role_other"]
+                forms_a["age_range"]
+                forms_a["gender"]
+                forms_a["education"]
+                forms_a["experience"]
+                forms_a["digital_comfort"]
+                from utils.ui import render_navigation_row
+                render_navigation_row(forms_a["back_button"], forms_a["next_button"])
+                forms_a["status"]
+
+            with gr.Column(visible=False, elem_id=f"section_B_{prefix}") as tab_b:
+                section_groups['B'] = tab_b
+                gr.HTML(get_section_header_html('B', lang=lang))
+                forms_b = StudyForms.create_section_b_forms(lang=lang)
+                all_forms['B'] = forms_b
+
+                forms_b["baseline_knowledge"]
+                forms_b["chatbot_use"]
+                forms_b["trust_automated"]
+                forms_b["info_channels"]
+                forms_b["chatbot_expectations"]
+                forms_b["chatbot_concerns"]
+                from utils.ui import render_navigation_row
+                render_navigation_row(forms_b["back_button"], forms_b["next_button"])
+                forms_b["status"]
+
+            with gr.Column(visible=False, elem_id=f"section_C_{prefix}") as tab_c:
+                section_groups['C'] = tab_c
+                gr.HTML(get_section_header_html('C', lang=lang))
+                # Show task instructions and question counter immediately
+                # above the chatbot interface.
+                gr.HTML(get_task_instructions_html(lang=lang))
+                question_counter_display = UIComponents.create_question_counter(lang=lang, prefix=prefix)
+
+                # Progress display for the whole study (per-language)
+                progress_display = gr.HTML(get_progress_html(0, total=6, lang=lang), elem_id=f"study_progress_{prefix}")
+
+                # Hidden placeholder used to inject small HTML scripts that update
+                # the browser location.hash. We update this element when advancing
+                # sections so the browser history contains a hash for each step.
+                history_display = gr.HTML(value="", elem_id=f"study_history_{prefix}")
+
+                # Now create the Section C form components so they are placed
+                # beneath the instructions in the layout order.
+                forms_c = StudyForms.create_section_c_forms(lang=lang)
+                all_forms['C'] = forms_c
+
+                with gr.Row():
+                    with gr.Column(scale=1):
+                        forms_c["chatbot_interface"]
+                        forms_c["user_input"]
+                        forms_c["send_btn"]
+
+                from utils.ui import render_navigation_row
+                render_navigation_row(forms_c["back_button"], forms_c["next_button"])
+                forms_c["status"]
+
+            with gr.Column(visible=False, elem_id=f"section_D_{prefix}") as tab_d:
+                section_groups['D'] = tab_d
+                gr.HTML(get_section_header_html('D', lang=lang))
+                forms_d = StudyForms.create_section_d_forms(lang=lang)
+                all_forms['D'] = forms_d
+
+                forms_d["prototype_opened"]
+                forms_d["interaction_time"]
+                forms_d["perceived_accuracy"]
+                forms_d["perceived_usefulness"]
+                forms_d["act_on_advice"]
+                forms_d["anxiety_change"]
+                forms_d["perceived_limitations"]
+                gr.HTML('<h4>System Usability</h4>')
+                forms_d["sus1"]
+                forms_d["sus2"]
+                from utils.ui import render_navigation_row
+                render_navigation_row(forms_d["back_button"], forms_d["next_button"])
+                forms_d["status"]
+
+            with gr.Column(visible=False, elem_id=f"section_E_{prefix}") as tab_e:
+                section_groups['E'] = tab_e
+                gr.HTML(get_section_header_html('E', lang=lang))
+                forms_e = StudyForms.create_section_e_forms(lang=lang)
+                all_forms['E'] = forms_e
+
+                gr.HTML('<h4>Scenario 1: Mild Expected Side Effect</h4>')
+                gr.HTML('<p><em>"What over-the-counter medicine can I take?" (after radionuclide therapy)</em></p>')
+                forms_e["scenario1_trust"]
+                forms_e["scenario1_reason"]
+                
+                gr.HTML('<h4>Scenario 2: Preparation Instructions</h4>')
+                gr.HTML('<p><em>"How should I prepare for my therapy session?"</em></p>')
+                forms_e["scenario2_trust"]
+                forms_e["scenario2_reason"]
+
+                gr.HTML('<h4>Scenario 3: Serious Side Effects</h4>')
+                gr.HTML('<p><em>"I\'m experiencing severe nausea after treatment - what should I do?"</em></p>')
+                forms_e["scenario3_trust"]
+                forms_e["scenario3_reason"]
+
+                from utils.ui import render_navigation_row
+                render_navigation_row(forms_e["back_button"], forms_e["next_button"])
+                forms_e["status"]
+
+            with gr.Column(visible=False, elem_id=f"section_F_{prefix}") as tab_f:
+                section_groups['F'] = tab_f
+                gr.HTML(get_section_header_html('F', lang=lang))
+                forms_f = StudyForms.create_section_f_forms(lang=lang)
+                all_forms['F'] = forms_f
+
+                forms_f["overall_satisfaction"]
+                forms_f["improvements"]
+                forms_f["recommend_tool"]
+                forms_f["additional_feedback"]
+                from utils.ui import render_navigation_row
+                render_navigation_row(forms_f["back_button"], forms_f["complete_button"])
+                forms_f["status"]
+                forms_f["completion_message"]
+
+        # Return the mapping of section containers so callers can update
+        # visibility per-section, the forms dict, the question counter, the progress display,
+        # and the hidden history display which is used to push URL hash updates.
+        return section_groups, all_forms, question_counter_display, progress_display, history_display
+
+class EventHandlers:
+    """Contains event handling logic for the study application"""
+    
+    @staticmethod
+    def create_chatbot_handler(study_manager):
+        """Create chatbot interaction handler (language-aware)"""
+        def handle_chatbot_interaction(message, history, session_id_val, count, lang='en'):
+            """Handle chatbot interaction and update question count"""
+            if not message.strip():
+                return history, "", count, gr.update(), gr.update()
+
+            # Determine language (default 'en') and forward to study manager
+            lang_code = 'de' if str(lang).lower().startswith('d') else 'en'
+            response, new_count = study_manager.get_chatbot_response(message, session_id_val, lang=lang_code)
+
+            # Normalize incoming history to Gradio 'messages' format:
+            # [{'role': 'user'|'assistant', 'content': '...'}, ...]
+            normalized = []
+            if history:
+                # If history is a list of dicts already, keep it.
+                if isinstance(history, list) and len(history) > 0 and isinstance(history[0], dict) and 'role' in history[0]:
+                    normalized = history.copy()
                 else:
-                    gr.HTML("""
-                    <div class="status-indicator">
-                        <span style="color: #d97706; font-weight: 600;">🟡 Fallback Mode:</span> 
-                        <span style="color: #374151;">Limited functionality - API key required</span>
-                    </div>
-                    """)
-    
-    def create_chat_tab(self):
-        """Create the main chat tab"""
-        with gr.TabItem("💬 Chat Assistant", elem_id="chat-tab"):
-            # Enhanced chatbot interface
-            chatbot = gr.Chatbot(
-                value=[],
-                elem_id="chatbot",
-                height=500,
-                show_copy_button=True,
-                show_share_button=False,
-                placeholder="💬 Start a conversation about theranostics...",
-                type="messages",
-                avatar_images=("👤", "🤖")
-            )
+                    # Handle legacy pair-format [[user, assistant], ...]
+                    try:
+                        for pair in history:
+                            if isinstance(pair, (list, tuple)) and len(pair) >= 2:
+                                normalized.append({'role': 'user', 'content': pair[0]})
+                                normalized.append({'role': 'assistant', 'content': pair[1]})
+                    except Exception:
+                        normalized = []
 
-            # ChatGPT-style input area with enhanced design
-            with gr.Row(elem_classes="input-row"):
-                msg = gr.Textbox(
-                    placeholder="💬 Ask anything...",
-                    container=False,
-                    scale=1,
-                    lines=1,
-                    show_label=False,
-                    elem_classes="chat-input"
-                )
-                submit_btn = gr.Button("˄", size="sm", variant="primary", elem_classes="send-button", scale=0)
-            
-            # Admin controls for conversation data
-            with gr.Row():
-                with gr.Column():
-                    export_btn = gr.Button("📥 Export Conversations", variant="secondary", size="sm")
-                    export_status = gr.Textbox(
-                        label="Export Status",
-                        placeholder="Click 'Export Conversations' to download logged conversations as CSV",
-                        interactive=False,
-                        lines=1
-                    )
+            # Append new messages in messages format
+            normalized.append({'role': 'user', 'content': message})
+            normalized.append({'role': 'assistant', 'content': response})
+
+            # Update counter display
+            counter_html = get_question_counter_html(new_count, lang=lang_code)
+
+            # Show next button if enough questions asked
+            show_next = new_count >= 3
+
+            return normalized, "", new_count, gr.update(value=counter_html), gr.update(visible=show_next)
         
-        return chatbot, msg, submit_btn, export_btn, export_status
+        return handle_chatbot_interaction
     
-    def create_form_tab(self):
-        """Create the feedback form tab"""
-        with gr.TabItem("📋 Feedback Form", elem_id="form-tab"):
-            # Instructions for the custom form
-            gr.HTML("""
-            <div style="background-color: #f8fafc; border-left: 4px solid #3b82f6; padding: 1rem; margin: 1rem 0; border-radius: 0.5rem;">
-                <h3 style="margin: 0 0 0.5rem 0; color: #1e40af; font-size: 1.1rem;">📝 Patient Feedback & Evaluation</h3>
-                <p style="margin: 0; color: #475569; line-height: 1.5;">
-                    Please complete this form to help us improve our theranostics education and support services. 
-                    The AI assistant will appear automatically to help you when needed.
-                </p>
+    @staticmethod
+    def create_section_advance_handler(study_manager):
+        """Create section advancement handler"""
+        def advance_section(current, session_id_val, from_section, to_section, *form_data):
+            """Advance to next section after saving current section data"""
+            
+            # Save current section data
+            data_dict = {f"field_{i}": value for i, value in enumerate(form_data) if value is not None}
+            study_manager.save_section_data(session_id_val, from_section, data_dict)
+            
+            # Status message
+            from styles import get_section_completed_html, get_progress_html
+            # Determine language for this session (saved when the user started the study)
+            session_info = study_manager.user_sessions.get(session_id_val, {})
+            lang = session_info.get('lang', 'en')
+            status_html = get_section_completed_html(from_section, lang=lang)
+
+            # Compute progress (how many sections completed)
+            completed = len(session_info.get('completed_sections', []))
+            progress_html = get_progress_html(completed, total=6, lang=lang)
+
+            # Build visibility updates for sections A-F. The `to_section` is
+            # made visible and all others hidden.
+            sections = ['A', 'B', 'C', 'D', 'E', 'F']
+            visibility_updates = []
+            for s in sections:
+                visible = (s == to_section)
+                visibility_updates.append(gr.update(visible=visible))
+
+            # Also create a small HTML snippet that, when applied, will set the
+            # browser's location.hash so the browser creates a history entry.
+            # Gradio will insert this HTML into the DOM; the inline script will
+            # update location.hash to the destination section (e.g., '#C').
+            history_html = f"""
+            <div style="display:none;">
+              <script>try{{ location.hash = '#{to_section}'; }}catch(e){{/* ignore */}}</script>
             </div>
-            """)
-            
-            # Custom form sections with conditional chatbot visibility
-            with gr.Column():
-                # Section navigation
-                with gr.Row():
-                    section_nav_a = gr.Button("📝 Section A: Demographics", variant="primary", scale=1)
-                    section_nav_b = gr.Button("🏥 Section B: Treatment Experience", variant="secondary", scale=1)
-                    section_nav_c = gr.Button("💭 Section C: Feedback & Comments", variant="secondary", scale=1)
-                
-                # Current section indicator
-                current_form_section = gr.State("a")
-                
-                # Create form sections
-                section_a, section_b, section_c, form_components = self._create_form_sections()
-                
-                # Form submission
-                with gr.Row():
-                    submit_form = gr.Button("📤 Submit Form", variant="primary", size="lg")
-                    form_status = gr.HTML("""""", visible=False)
-            
-            # Help section for form assistance
-            help_components = self._create_form_help_section()
+            """
+
+            # Update session current_section and log to terminal for debugging/traceability
+            try:
+                if session_id_val in study_manager.user_sessions:
+                    study_manager.user_sessions[session_id_val]['current_section'] = to_section
+            except Exception:
+                pass
+
+            try:
+                from datetime import datetime
+                print(f"[{datetime.now().isoformat()}] Session '{session_id_val}' advanced to section {to_section}")
+            except Exception:
+                print(f"Session '{session_id_val}' advanced to section {to_section}")
+
+            # Return visibility updates for A..F followed by the status HTML, progress HTML, and the history script HTML.
+            return (*visibility_updates, gr.update(value=status_html), gr.update(value=progress_html), gr.update(value=history_html))
         
-        return (section_nav_a, section_nav_b, section_nav_c, current_form_section, 
-                section_a, section_b, section_c, submit_form, form_status, 
-                form_components, help_components)
+        return advance_section
     
-    def _create_form_sections(self):
-        """Create the individual form sections"""
-        # Section A: Demographics
-        with gr.Column(visible=True) as section_a:
-            gr.HTML("""
-            <div style="background-color: #dbeafe; border-left: 4px solid #3b82f6; padding: 1rem; margin: 1rem 0; border-radius: 0.5rem;">
-                <h4 style="margin: 0 0 0.5rem 0; color: #1e40af;">📝 Section A: Demographics & Medical History</h4>
+    @staticmethod
+    def create_completion_handler(study_manager):
+        """Create study completion handler"""
+        def complete_study_handler(session_id_val, *form_data):
+            """Complete the study"""
+            data_dict = {f"field_{i}": value for i, value in enumerate(form_data) if value is not None}
+            study_manager.save_section_data(session_id_val, "F", data_dict)
+            
+            from styles import get_completion_html
+            completion_html = get_completion_html(session_id_val)
+            
+            return gr.update(visible=True, value=completion_html)
+        
+        return complete_study_handler
+
+    @staticmethod
+    def create_section_back_handler(study_manager):
+        """Create handler to move back to a previous section"""
+        def back_section(current, session_id_val, from_section, to_section, *form_data):
+            # Save current section data
+            data_dict = {f"field_{i}": value for i, value in enumerate(form_data) if value is not None}
+            study_manager.save_section_data(session_id_val, from_section, data_dict)
+
+            from styles import get_section_completed_html, get_progress_html
+            session_info = study_manager.user_sessions.get(session_id_val, {})
+            lang = session_info.get('lang', 'en')
+            # Note: for backward navigation we can also show a short status
+            status_html = get_section_completed_html(from_section, lang=lang)
+
+            completed = len(session_info.get('completed_sections', []))
+            progress_html = get_progress_html(completed, total=6, lang=lang)
+
+            sections = ['A', 'B', 'C', 'D', 'E', 'F']
+            visibility_updates = []
+            for s in sections:
+                visible = (s == to_section)
+                visibility_updates.append(gr.update(visible=visible))
+
+            history_html = f"""
+            <div style="display:none;">
+              <script>try{{ location.hash = '#{to_section}'; }}catch(e){{/* ignore */}}</script>
             </div>
-            """)
-            
-            with gr.Row():
-                with gr.Column(scale=2):
-                    age = gr.Number(label="Age", minimum=0, maximum=120)
-                    gender = gr.Radio(["Male", "Female", "Other", "Prefer not to say"], label="Gender")
-                    diagnosis = gr.Textbox(label="Primary Diagnosis", placeholder="e.g., Neuroendocrine tumor, Prostate cancer...")
-                    
-                with gr.Column(scale=1):
-                    # Show chatbot for Section A when requested
-                    show_help_a = gr.Button("🤖 Get Help with Demographics", variant="secondary")
-                    help_chatbot_a = gr.Chatbot(
-                        value=[],
-                        height=300,
-                        visible=False,
-                        label="Demographics Help Assistant",
-                        type="messages",
-                        avatar_images=("👤", "🤖")
-                    )
-                    help_msg_a = gr.Textbox(
-                        placeholder="Ask about filling out demographics...",
-                        visible=False,
-                        show_label=False
-                    )
-        
-        # Section B: Treatment Experience  
-        with gr.Column(visible=False) as section_b:
-            gr.HTML("""
-            <div style="background-color: #f0fdf4; border-left: 4px solid #22c55e; padding: 1rem; margin: 1rem 0; border-radius: 0.5rem;">
-                <h4 style="margin: 0 0 0.5rem 0; color: #166534;">🏥 Section B: Treatment Experience</h4>
-            </div>
-            """)
-            
-            with gr.Row():
-                with gr.Column(scale=2):
-                    treatment_date = gr.Textbox(label="Treatment Date", placeholder="MM/YYYY or approximate")
-                    treatment_satisfaction = gr.Slider(1, 10, value=5, label="Overall Treatment Satisfaction (1-10)")
-                    side_effects = gr.CheckboxGroup(
-                        ["Fatigue", "Nausea", "Pain", "Anxiety", "Sleep issues", "Other"],
-                        label="Side Effects Experienced"
-                    )
-                    side_effects_severity = gr.Slider(1, 10, value=1, label="Side Effects Severity (1-10)")
-                    
-                with gr.Column(scale=1):
-                    # Show chatbot for Section B when requested
-                    show_help_b = gr.Button("🤖 Get Help with Treatment Questions", variant="secondary")
-                    help_chatbot_b = gr.Chatbot(
-                        value=[],
-                        height=300,
-                        visible=False,
-                        label="Treatment Experience Assistant",
-                        type="messages",
-                        avatar_images=("👤", "🤖")
-                    )
-                    help_msg_b = gr.Textbox(
-                        placeholder="Ask about treatment experience...",
-                        visible=False,
-                        show_label=False
-                    )
-        
-        # Section C: Feedback & Comments
-        with gr.Column(visible=False) as section_c:
-            gr.HTML("""
-            <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 1rem; margin: 1rem 0; border-radius: 0.5rem;">
-                <h4 style="margin: 0 0 0.5rem 0; color: #92400e;">💭 Section C: Feedback & Comments</h4>
-                <p style="margin: 0; color: #78350f; font-size: 0.9rem;">This section automatically shows the AI assistant to help you provide detailed feedback.</p>
-            </div>
-            """)
-            
-            with gr.Row():
-                with gr.Column(scale=2):
-                    overall_feedback = gr.Textbox(
-                        label="Overall Feedback", 
-                        lines=4,
-                        placeholder="Please share your overall experience with theranostic treatment..."
-                    )
-                    improvements = gr.Textbox(
-                        label="Suggestions for Improvement",
-                        lines=3,
-                        placeholder="What could we improve to better support patients?"
-                    )
-                    recommend = gr.Radio(
-                        ["Definitely", "Probably", "Maybe", "Probably not", "Definitely not"],
-                        label="Would you recommend this treatment to others?"
-                    )
-                    
-                with gr.Column(scale=1):
-                    # Always show chatbot for Section C
-                    gr.HTML("""
-                    <div style="background-color: #f0f9ff; border: 1px solid #3b82f6; border-radius: 0.5rem; padding: 0.75rem; margin-bottom: 1rem;">
-                        <p style="margin: 0; color: #1e40af; font-size: 0.9rem; font-weight: 500;">
-                            🤖 AI Assistant Active
-                        </p>
-                        <p style="margin: 0.25rem 0 0 0; color: #475569; font-size: 0.8rem;">
-                            I'm here to help you provide detailed feedback!
-                        </p>
-                    </div>
-                    """)
-                    help_chatbot_c = gr.Chatbot(
-                        value=[],
-                        height=350,
-                        visible=True,
-                        label="Feedback Assistant",
-                        type="messages",
-                        avatar_images=("👤", "🤖")
-                    )
-                    help_msg_c = gr.Textbox(
-                        placeholder="Ask for help with providing feedback...",
-                        visible=True,
-                        show_label=False
-                    )
-        
-        form_components = {
-            'age': age, 'gender': gender, 'diagnosis': diagnosis,
-            'treatment_date': treatment_date, 'treatment_satisfaction': treatment_satisfaction,
-            'side_effects': side_effects, 'side_effects_severity': side_effects_severity,
-            'overall_feedback': overall_feedback, 'improvements': improvements, 'recommend': recommend,
-            'show_help_a': show_help_a, 'help_chatbot_a': help_chatbot_a, 'help_msg_a': help_msg_a,
-            'show_help_b': show_help_b, 'help_chatbot_b': help_chatbot_b, 'help_msg_b': help_msg_b,
-            'help_chatbot_c': help_chatbot_c, 'help_msg_c': help_msg_c
-        }
-        
-        return section_a, section_b, section_c, form_components
-    
-    def _create_form_help_section(self):
-        """Create the form help section"""
-        with gr.Accordion("🤔 Need Help with the Form?", open=False):
-            gr.HTML("""
-            <div style="padding: 1rem;">
-                <p style="margin: 0 0 1rem 0; color: #374151;">
-                    If you're unsure about any question in the form, here are some quick help options:
-                </p>
-            </div>
-            """)
-            
-            with gr.Row():
-                form_help_q1 = gr.Button("❓ What is treatment satisfaction?", size="sm", variant="secondary")
-                form_help_q2 = gr.Button("❓ How to rate side effects?", size="sm", variant="secondary")
-                form_help_q3 = gr.Button("❓ What information should I share?", size="sm", variant="secondary")
-            
-            # Quick response area for form help
-            form_help_response = gr.Textbox(
-                label="Quick Help Response",
-                interactive=False,
-                visible=False,
-                elem_classes="form-help-response"
-            )
-        
-        return {
-            'form_help_q1': form_help_q1,
-            'form_help_q2': form_help_q2,
-            'form_help_q3': form_help_q3,
-            'form_help_response': form_help_response
-        }
-    
-    def create_combined_tab(self):
-        """Create the combined view tab"""
-        with gr.TabItem("📊 Combined View", elem_id="combined-tab"):
-            gr.HTML("""
-            <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 1rem; margin: 1rem 0; border-radius: 0.5rem;">
-                <h3 style="margin: 0 0 0.5rem 0; color: #92400e; font-size: 1.1rem;">🔄 Interactive Experience</h3>
-                <p style="margin: 0; color: #78350f; line-height: 1.5;">
-                    Fill out the form with AI assistance. The chatbot appears automatically when you need help!
-                </p>
-            </div>
-            """)
-            
-            with gr.Row(equal_height=True):
-                with gr.Column(scale=3):
-                    # Compact form sections
-                    with gr.Row():
-                        combined_section_a = gr.Button("📝 Demographics", variant="primary", scale=1)
-                        combined_section_b = gr.Button("🏥 Treatment Experience", variant="secondary", scale=1)
-                        combined_section_c = gr.Button("💭 Feedback", variant="secondary", scale=1)
-                    
-                    combined_current_section = gr.State("a")
-                    
-                    # Create compact form sections
-                    combined_sections = self._create_combined_form_sections()
-                
-                with gr.Column(scale=2):
-                    # Dynamic chatbot that appears based on section and user needs
-                    chatbot_status = gr.HTML("""
-                    <div style="background-color: #f3f4f6; border: 1px solid #d1d5db; border-radius: 0.5rem; padding: 1rem; margin-bottom: 1rem; text-align: center;">
-                        <p style="margin: 0; color: #6b7280; font-style: italic;">
-                            🤖 AI Assistant will appear when you need help
-                        </p>
-                    </div>
-                    """)
-                    
-                    combined_chatbot = gr.Chatbot(
-                        value=[],
-                        elem_id="combined-chatbot",
-                        height=400,
-                        show_copy_button=True,
-                        show_share_button=False,
-                        placeholder="💬 Ask questions about the form...",
-                        type="messages",
-                        avatar_images=("👤", "🤖"),
-                        visible=False
-                    )
-                    
-                    combined_msg = gr.Textbox(
-                        placeholder="💬 Ask for help with the form...",
-                        container=False,
-                        scale=1,
-                        lines=1,
-                        show_label=False,
-                        elem_classes="chat-input",
-                        visible=False
-                    )
-                    
-                    combined_submit = gr.Button("˄", size="sm", variant="primary", elem_classes="send-button", visible=False)
-                    
-                    # Help buttons for each section
-                    with gr.Column():
-                        need_help_btn = gr.Button("🆘 I Need Help", variant="secondary", visible=True)
-                        hide_help_btn = gr.Button("✖️ Hide Assistant", variant="secondary", visible=False)
-        
-        return (combined_section_a, combined_section_b, combined_section_c, combined_current_section,
-                combined_sections, chatbot_status, combined_chatbot, combined_msg, combined_submit,
-                need_help_btn, hide_help_btn)
-    
-    def _create_combined_form_sections(self):
-        """Create compact form sections for combined view"""
-        # Compact Demographics Section
-        with gr.Column(visible=True) as combined_demo_section:
-            gr.HTML("<h4 style='color: #1e40af; margin: 0.5rem 0;'>📝 Demographics</h4>")
-            with gr.Row():
-                combined_age = gr.Number(label="Age", scale=1)
-                combined_gender = gr.Radio(["Male", "Female", "Other"], label="Gender", scale=2)
-            combined_diagnosis = gr.Textbox(label="Diagnosis", placeholder="Primary diagnosis...")
-        
-        # Compact Treatment Section
-        with gr.Column(visible=False) as combined_treatment_section:
-            gr.HTML("<h4 style='color: #166534; margin: 0.5rem 0;'>🏥 Treatment Experience</h4>")
-            combined_treatment_date = gr.Textbox(label="Treatment Date", placeholder="MM/YYYY")
-            combined_satisfaction = gr.Slider(1, 10, value=5, label="Satisfaction (1-10)")
-            combined_side_effects = gr.CheckboxGroup(
-                ["Fatigue", "Nausea", "Pain", "Other"], 
-                label="Side Effects"
-            )
-        
-        # Compact Feedback Section
-        with gr.Column(visible=False) as combined_feedback_section:
-            gr.HTML("<h4 style='color: #92400e; margin: 0.5rem 0;'>💭 Feedback & Comments</h4>")
-            combined_overall_feedback = gr.Textbox(
-                label="Overall Feedback", 
-                lines=3,
-                placeholder="Share your experience..."
-            )
-            combined_recommend = gr.Radio(
-                ["Definitely", "Probably", "Maybe", "Probably not"],
-                label="Recommend to others?"
-            )
-        
-        return {
-            'combined_demo_section': combined_demo_section,
-            'combined_treatment_section': combined_treatment_section,
-            'combined_feedback_section': combined_feedback_section,
-            'combined_age': combined_age,
-            'combined_gender': combined_gender,
-            'combined_diagnosis': combined_diagnosis,
-            'combined_treatment_date': combined_treatment_date,
-            'combined_satisfaction': combined_satisfaction,
-            'combined_side_effects': combined_side_effects,
-            'combined_overall_feedback': combined_overall_feedback,
-            'combined_recommend': combined_recommend
-        }
-    
-    # Message handling functions
-    def user_message(self, message, history):
-        """Handle user message submission"""
-        if message.strip():
-            return "", history + [{"role": "user", "content": message}]
-        return message, history
+            """
 
-    def bot_message(self, history):
-        """Handle bot response generation"""
-        if history and len(history) > 0:
-            # Check if the last message is from user and needs a response
-            last_message = history[-1]
-            if last_message["role"] == "user":
-                user_msg = last_message["content"]
-                # Get previous messages for context (exclude the current user message)
-                previous_history = history[:-1]
-                bot_response = theranostics_bot.chatbot_response(user_msg, previous_history, context="main_chat")
-                
-                return history + [{"role": "assistant", "content": bot_response}]
-        return history
+            # Update session current_section and log to terminal
+            try:
+                if session_id_val in study_manager.user_sessions:
+                    study_manager.user_sessions[session_id_val]['current_section'] = to_section
+            except Exception:
+                pass
 
-    def combined_user_message(self, message, history):
-        """Handle message submission for combined view"""
-        if message.strip():
-            return "", history + [{"role": "user", "content": message}]
-        return message, history
+            try:
+                from datetime import datetime
+                print(f"[{datetime.now().isoformat()}] Session '{session_id_val}' moved back to section {to_section}")
+            except Exception:
+                print(f"Session '{session_id_val}' moved back to section {to_section}")
 
-    def combined_bot_message(self, history, section):
-        """Handle bot response for combined view"""
-        if history and len(history) > 0:
-            last_message = history[-1]
-            if last_message["role"] == "user":
-                user_msg = last_message["content"]
-                previous_history = history[:-1]
-                bot_response = form_handler.form_contextual_response(user_msg, previous_history, section)
-                return history + [{"role": "assistant", "content": bot_response}]
-        return history
+            return (*visibility_updates, gr.update(value=status_html), gr.update(value=progress_html), gr.update(value=history_html))
 
-    def section_help_user_message(self, message, history):
-        """Handle user message for section help"""
-        if message.strip():
-            return "", history + [{"role": "user", "content": message}]
-        return message, history
-
-    def section_help_bot_message(self, history, section):
-        """Handle bot response for section help"""
-        if history and len(history) > 0:
-            last_message = history[-1]
-            if last_message["role"] == "user":
-                user_msg = last_message["content"]
-                previous_history = history[:-1]
-                bot_response = form_handler.form_contextual_response(user_msg, previous_history, section)
-                return history + [{"role": "assistant", "content": bot_response}]
-        return history
-
-    def handle_example_question(self, question, history):
-        """Handle example question clicks"""
-        # Add the question directly to chat history without showing in input
-        new_history = history + [{"role": "user", "content": question}]
-        return "", new_history  # Empty string for input field, updated history for chat
-
-
-# Global UI components instance
-ui_components = UIComponents()
+        return back_section
