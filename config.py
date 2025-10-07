@@ -3,7 +3,12 @@ import os
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
-load_dotenv()
+# Look for .env in parent directory (IAEA Chatbot folder)
+parent_env = os.path.join(os.path.dirname(__file__), '..', '.env')
+if os.path.exists(parent_env):
+    load_dotenv(parent_env)
+else:
+    load_dotenv()  # Fallback to current directory
 
 LLM_TEMPERATURE = 0.1  # Slightly higher for more natural responses
 MAX_TOKENS = 500  # Reduced for faster responses - still good for most queries
@@ -20,12 +25,11 @@ OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 # Model configuration with fallback options
-PRIMARY_MODEL = "google/gemma-3-27b-it:free"
+PRIMARY_MODEL = "openai/gpt-oss-20b:free"
 BACKUP_MODELS = [
+    "google/gemma-3-27b-it:free",
     "qwen/qwen-2.5-coder-32b-instruct:free",
-    "google/gemini-2.0-flash-exp:free",
-    "microsoft/phi-3.5-mini-128k-instruct:free",
-    "meta-llama/llama-3.1-8b-instruct:free"
+    "google/gemini-2.0-flash-exp:free"
 ]
 
 # Current active model (will be updated if fallback is needed)
