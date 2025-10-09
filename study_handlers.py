@@ -46,19 +46,58 @@ def proceed_to_chatbot(age, gender, education, medical_background, chatbot_exper
     )
 
 
+def save_demographics(age, gender, education, medical_background, chatbot_experience, session_id):
+    """Save demographics data and proceed to the attitude section"""
+    demographics_data = {
+        'session_id': session_id,
+        'timestamp': datetime.now().isoformat(),
+        'age': age,
+        'gender': gender,
+        'education': education,
+        'medical_background': medical_background,
+        'chatbot_experience': chatbot_experience
+    }
+    try:
+        logging_module.log_demographics(demographics_data)
+    except Exception:
+        # Fallback to generic logging if specific function isn't available
+        logging_module.save_form_submission(demographics_data)
+
+    return (
+        gr.update(visible=False),  # Hide demographics
+        gr.update(visible=True),   # Show attitude
+        session_id
+    )
+
+
+def save_attitude(attitude_val, trust_sources_val, expectations_val, session_id):
+    """Save attitude & expectations data and proceed to chatbot interaction"""
+    attitude_data = {
+        'session_id': session_id,
+        'timestamp': datetime.now().isoformat(),
+        'attitude': attitude_val,
+        'trust_sources': trust_sources_val,
+        'expectations': expectations_val
+    }
+    logging_module.log_interaction({'type': 'attitude', **attitude_data})
+
+    return (
+        gr.update(visible=False),  # Hide attitude
+        gr.update(visible=True),   # Show chatbot
+        session_id
+    )
+
+
 def handle_chatbot_message(message, history, session_id, question_count):
     """Handle chatbot message interaction"""
     if not message.strip():
         return "", history, question_count, gr.update(visible=False)
     
-    # Convert Gradio history format to chatbot expected format
+    # Convert Gradio messages format to chatbot expected format
     conversation_history = []
     if history:
-        for user_msg, bot_msg in history:
-            if user_msg:
-                conversation_history.append({"role": "user", "content": user_msg})
-            if bot_msg:
-                conversation_history.append({"role": "assistant", "content": bot_msg})
+        # With type="messages", history is already in the correct format
+        conversation_history = history.copy()
     
     # Add current message
     conversation_history.append({"role": "user", "content": message})
@@ -71,9 +110,10 @@ def handle_chatbot_message(message, history, session_id, question_count):
         section="interaction"
     )
     
-    # Update history in Gradio format
+    # Update history in messages format
     history = history or []
-    history.append([message, response])
+    history.append({"role": "user", "content": message})
+    history.append({"role": "assistant", "content": response})
     
     # Increment question counter
     question_count += 1
@@ -115,7 +155,13 @@ def submit_study(usefulness, accuracy, ease_of_use, trust, would_use, improvemen
     # Validate required feedback fields
     if would_use is None:
         gr.Warning("Please answer whether you would use this chatbot.")
-        return gr.update()
+        return (
+            gr.update(),  # demographics_section
+            gr.update(),  # chatbot_section  
+            gr.update(),  # feedback_section
+            gr.update(),  # thank_you_section (unchanged)
+            session_id    # session_id (unchanged)
+        )
     
     # Save feedback data
     feedback_data = {
@@ -132,14 +178,11 @@ def submit_study(usefulness, accuracy, ease_of_use, trust, would_use, improvemen
     
     logging_module.log_feedback(feedback_data)
     
-    # Show completion message
-    completion_text = f"""
-    ## Thank you for participating!
-    
-    Your responses have been recorded (Session ID: {session_id}).
-    Your feedback will help improve chatbot-based patient education tools.
-    
-    You can now close this window.
-    """
-    
-    return gr.update(value=completion_text, visible=True)
+    # Show thank you section and hide others
+    return (
+        gr.update(visible=False),  # Hide demographics
+        gr.update(visible=False),  # Hide chatbot
+        gr.update(visible=False),  # Hide feedback
+        gr.update(visible=True),   # Show thank you
+        session_id
+    )

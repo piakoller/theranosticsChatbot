@@ -22,36 +22,73 @@ def create_demographics_section():
         age = gr.Dropdown(
             label="Age Group",
             choices=AGE_GROUPS,
-            value=None
+            value=None,
+            elem_classes=["label-wrap"]
         )
         
         gender = gr.Radio(
             label="Gender",
             choices=GENDER_OPTIONS,
-            value=None
+            value=None,
+            elem_classes=["label-wrap"]
         )
         
         education = gr.Dropdown(
             label="Education Level",
             choices=EDUCATION_LEVELS,
-            value=None
+            value=None,
+            elem_classes=["label-wrap"]
         )
         
         medical_background = gr.Radio(
             label="Do you have a medical background?",
             choices=MEDICAL_BACKGROUND_OPTIONS,
-            value=None
+            value=None,
+            elem_classes=["label-wrap"]
         )
         
         chatbot_experience = gr.Radio(
             label="Have you used chatbots before?",
             choices=CHATBOT_EXPERIENCE_OPTIONS,
-            value=None
+            value=None,
+            elem_classes=["label-wrap"]
         )
         
-        next_btn = gr.Button("Start Chatbot Interaction", variant="primary")
+        next_btn = gr.Button("Next", variant="primary")
         
     return demographics_section, age, gender, education, medical_background, chatbot_experience, next_btn
+
+
+def create_attitude_section():
+    """Create a section to collect attitude towards chatbots and expectations"""
+    with gr.Column(visible=False) as attitude_section:
+        gr.Markdown("## Attitude & Expectations")
+        gr.Markdown("Please tell us about your attitude towards chatbots and what you expect from them:")
+
+        attitude = gr.Radio(
+            label="Overall attitude towards chatbots",
+            choices=["Very positive", "Somewhat positive", "Neutral", "Somewhat negative", "Very negative"],
+            value=None,
+            elem_classes=["label-wrap"]
+        )
+
+        trust_sources = gr.CheckboxGroup(
+            label="Which sources would make you trust a chatbot? (choose all that apply)",
+            choices=["Hospital/Clinic endorsement", "Physician recommendation", "Cited sources/references", "Accurate answers consistently", "Data privacy assurances"],
+            value=[],
+            elem_classes=["label-wrap"]
+        )
+
+        expectations = gr.Textbox(
+            label="What do you expect from a healthcare chatbot?",
+            lines=3,
+            placeholder="E.g., clear explanations, references, empathy, referral to specialists...",
+            elem_classes=["label-wrap"]
+        )
+
+        attitude_next = gr.Button("Next", variant="primary")
+
+    return attitude_section, attitude, trust_sources, expectations, attitude_next
 
 
 def create_chatbot_section():
@@ -63,7 +100,8 @@ def create_chatbot_section():
         chatbot = gr.Chatbot(
             label="Patient Education Chatbot",
             height=CHATBOT_HEIGHT,
-            show_label=True
+            show_label=True,
+            type="messages"
         )
         
         msg = gr.Textbox(
@@ -71,7 +109,8 @@ def create_chatbot_section():
             placeholder="Type your question here and press Enter to send...",
             lines=1,
             max_lines=3,
-            autofocus=True
+            autofocus=True,
+            elem_classes=["label-wrap"]
         )
         
         send_btn = gr.Button("Send", variant="primary")
@@ -146,6 +185,19 @@ def create_feedback_section():
         
         submit_btn = gr.Button("Submit Study", variant="primary")
         
-        completion_message = gr.Markdown("", visible=False)
+    return feedback_section, usefulness, accuracy, ease_of_use, trust, would_use, improvements, overall_feedback, submit_btn
+
+
+def create_thank_you_section():
+    """Create the thank you completion section"""
+    with gr.Column(visible=False) as thank_you_section:
+        gr.Markdown("## Thank you for participating!")
+        gr.Markdown("""
+        Your responses have been recorded and will help improve chatbot-based patient education tools.
         
-    return feedback_section, usefulness, accuracy, ease_of_use, trust, would_use, improvements, overall_feedback, submit_btn, completion_message
+        Your feedback is valuable for advancing healthcare technology.
+        
+        You can now close this window.
+        """)
+        
+    return thank_you_section

@@ -353,6 +353,21 @@ def log_conversation(user_input: str, bot_response: str,
     return conversation_logger.log_conversation(user_input, bot_response, context, section, model_used, metadata)
 
 
+def log_demographics(demographics_data: Dict[str, Any]) -> str:
+    """Log demographics data"""
+    return conversation_logger.save_form_submission(demographics_data)
+
+
+def log_interaction(interaction_data: Dict[str, Any]) -> str:
+    """Log interaction data"""
+    return conversation_logger.save_form_submission(interaction_data)
+
+
+def log_feedback(feedback_data: Dict[str, Any]) -> str:
+    """Log feedback data"""
+    return conversation_logger.save_form_submission(feedback_data)
+
+
 def get_session_id() -> str:
     """Get current session ID"""
     return conversation_logger.session_id

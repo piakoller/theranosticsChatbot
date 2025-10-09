@@ -67,6 +67,65 @@ APP_CSS = """
 .gradio-container {
     max-width: 800px !important;
     margin: auto !important;
+    font-family: 'Segoe UI', 'Arial', sans-serif !important;
+}
+
+* {
+    font-family: 'Segoe UI', 'Arial', sans-serif !important;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Segoe UI', 'Arial', sans-serif !important;
+    font-weight: 600 !important;
+}
+
+.gr-button {
+    font-family: 'Segoe UI', 'Arial', sans-serif !important;
+    font-weight: 500 !important;
+}
+
+/* Style the actual input containers */
+.gr-form > div,
+.gr-radio > div,
+.gr-dropdown > div,
+.gr-textbox > div {
+    border: 2px solid #e5e7eb !important;
+    border-top: none !important;
+    border-radius: 0 0 8px 8px !important;
+    padding: 8px !important;
+    background: white !important;
+}
+
+/* Style the label of our custom dropdowns */
+.demographic-dropdown .label-wrap {
+    background: linear-gradient(90deg, #7c3aed, #a855f7) !important;
+    color: white !important;
+    padding: 10px !important;
+    border-top-left-radius: 6px !important;
+    border-top-right-radius: 6px !important;
+}
+
+/* Style the input area of the dropdown */
+.demographic-dropdown .svelte-1gfkn6j {
+    background-color: #e0e7ff !important;
+    color: #e0e7ff !important;
+    padding: 10px !important;
+    width: 100% !important;
+}
+.label-wrap .svelte-g2oxp3 {
+    width: 100% !important;
+    background-color: #e0e7ff !important;
+}
+
+/* Style the dropdown items on hover */
+.demographic-dropdown ul li:hover {
+    background-color: #a855f7 !important;
+    color: white !important;
+}
+
+/* Style the dropdown arrow */
+.demographic-dropdown .arrow-down {
+    color: #7c3aed !important;
 }
 """
 
