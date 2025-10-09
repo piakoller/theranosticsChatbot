@@ -15,7 +15,7 @@ tags:
   - theranostics
   - medical-ai
   - user-study
-short_description: Interactive study platform for testing chatbot effectiveness in patient education
+short_description: Study platform for testing chatbot patient education
 ---
 
 # Patient Education Chatbot Study
