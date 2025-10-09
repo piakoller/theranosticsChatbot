@@ -35,3 +35,7 @@ BACKUP_MODELS = [
 # Current active model (will be updated if fallback is needed)
 OPENROUTER_MODEL = PRIMARY_MODEL
 DEFAULT_OPENROUTER_MODEL = PRIMARY_MODEL
+
+# User Study Configuration
+# Section order for the Theranostics Chatbot User Study
+SECTION_ORDER = ['A', 'B', 'C', 'D', 'E', 'F']

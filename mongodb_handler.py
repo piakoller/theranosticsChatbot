@@ -105,32 +105,63 @@ class MongoDBHandler:
     def log_conversation(self, user_message: str, bot_response: str, 
                         context: str = "main_chat", section: str = None, 
                         model_used: str = None, session_id: str = None) -> bool:
-        """Log a conversation exchange to MongoDB"""
+        """Accumulate conversation exchanges and update/create complete conversation per user"""
         if not self.connected:
             return False
             
         try:
-            conversation_doc = {
-                "timestamp": datetime.now(),
-                "session_id": session_id or self._generate_session_id(),
-                "context": context,  # main_chat, form_help, combined_view
-                "section": section,  # a, b, c for form sections
+            current_session_id = session_id or self._generate_session_id()
+            timestamp = datetime.now()
+            
+            # Create a conversation exchange object
+            conversation_exchange = {
+                "timestamp": timestamp,
                 "user_message": user_message,
                 "bot_response": bot_response,
                 "model_used": model_used,
-                "message_length": len(user_message),
-                "response_length": len(bot_response),
-                "user_ip": self._get_user_ip(),  # For analytics (if available)
+                "context": context,
+                "section": section
             }
             
-            result = self.db[self.conversations_collection_name].insert_one(conversation_doc)
+            # Try to find existing conversation document for this session
+            existing_conversation = self.db[self.conversations_collection_name].find_one({
+                "session_id": current_session_id
+            })
             
-            if result.inserted_id:
-                print(f"📝 Conversation logged to MongoDB: {result.inserted_id}")
-                return True
+            if existing_conversation:
+                # Update existing conversation by appending new exchange
+                result = self.db[self.conversations_collection_name].update_one(
+                    {"session_id": current_session_id},
+                    {
+                        "$push": {"conversation_history": conversation_exchange},
+                        "$set": {
+                            "last_updated": timestamp,
+                            "total_exchanges": existing_conversation.get("total_exchanges", 0) + 1
+                        }
+                    }
+                )
+                if result.modified_count > 0:
+                    print(f"📝 Conversation updated for session: {current_session_id[:8]}...")
+                    return True
             else:
-                print("⚠️ Failed to insert conversation to MongoDB")
-                return False
+                # Create new conversation document
+                conversation_doc = {
+                    "session_id": current_session_id,
+                    "created_at": timestamp,
+                    "last_updated": timestamp,
+                    "total_exchanges": 1,
+                    "user_ip": self._get_user_ip(),
+                    "conversation_history": [conversation_exchange]
+                }
+                
+                result = self.db[self.conversations_collection_name].insert_one(conversation_doc)
+                
+                if result.inserted_id:
+                    print(f"📝 New conversation created for session: {current_session_id[:8]}...")
+                    return True
+            
+            print("⚠️ Failed to log conversation to MongoDB")
+            return False
                 
         except Exception as e:
             print(f"❌ Error logging conversation to MongoDB: {e}")
