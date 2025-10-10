@@ -177,18 +177,71 @@ h1, h2, h3, h4, h5, h6 {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: 12px !important;
-    padding: 12px 0 !important;
+    gap: min(12px, 2vw) !important;
+    padding: min(12px, 2vw) 0 !important;
 }
+
+/* Responsive icon sizing */
 .app-header .icon {
-    width: 36px !important;
-    height: 36px !important;
     display: inline-block !important;
 }
+
+.responsive-icon {
+    width: clamp(24px, 4vw, 48px) !important;
+    height: clamp(24px, 4vw, 48px) !important;
+    display: inline-block !important;
+    max-width: 100% !important;
+}
+
 .app-header h1 {
     margin: 0 !important;
-    font-size: 1.25rem !important;
+    font-size: clamp(1rem, 3vw, 1.5rem) !important;
     font-weight: 700 !important;
+}
+
+/* Media queries for fine-tuned responsive behavior */
+@media (max-width: 480px) {
+    .responsive-icon {
+        width: 28px !important;
+        height: 28px !important;
+    }
+    .app-header h1 {
+        font-size: 1.1rem !important;
+    }
+    .app-header {
+        gap: 8px !important;
+        padding: 8px 0 !important;
+    }
+}
+
+@media (min-width: 481px) and (max-width: 768px) {
+    .responsive-icon {
+        width: 32px !important;
+        height: 32px !important;
+    }
+    .app-header h1 {
+        font-size: 1.2rem !important;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+    .responsive-icon {
+        width: 36px !important;
+        height: 36px !important;
+    }
+    .app-header h1 {
+        font-size: 1.3rem !important;
+    }
+}
+
+@media (min-width: 1025px) {
+    .responsive-icon {
+        width: 42px !important;
+        height: 42px !important;
+    }
+    .app-header h1 {
+        font-size: 1.4rem !important;
+    }
 }
 """
 

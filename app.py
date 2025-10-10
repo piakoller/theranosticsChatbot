@@ -9,6 +9,10 @@ from study_sections import create_demographics_section, create_attitude_section,
 from study_handlers import proceed_to_chatbot, save_demographics, save_attitude, handle_chatbot_message, proceed_to_feedback, submit_study, clear_chat, save_consent
 from study_utils import generate_session_id
 
+import base64
+with open('assets/TheranosticChatbotIcon.svg', 'rb') as f:
+    svg_data = base64.b64encode(f.read()).decode()
+
 def create_study_app():
     """Create the main study application"""
     
@@ -21,21 +25,14 @@ def create_study_app():
         session_id = gr.State(value=generate_session_id())
         question_count = gr.State(value=0)
 
-        # Always-visible header with icon
-        gr.HTML(
-            """
-            <div class='app-header'>
-              <span class='icon'>
-                <!-- simple book/health SVG icon -->
-                <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='#7c3aed' aria-hidden='true'>
-                  <path d='M4 6h16v12H4z' opacity='0.1'/>
-                  <path d='M6 4h10a2 2 0 0 1 2 2v12a1 1 0 0 1-1.5.86L14 18l-2 1-2-1-2.5.86A1 1 0 0 1 6 18V6a2 2 0 0 1 2-2z' />
-                </svg>
-              </span>
-              <h1>Theranostics Chatbot</h1>
-            </div>
-            """
-        )
+        gr.HTML(f"""
+        <div class='app-header'>
+        <span class='icon'>
+            <img src='data:image/svg+xml;base64,{svg_data}' style='width:5em;height:5em;display:inline-block' />
+        </span>
+        <h1>Theranostics Chatbot</h1>
+        </div>
+        """)
 
         # Create all sections (consent shown first)
         consent_section, consent_radio, consent_next = create_consent_section()
@@ -102,4 +99,4 @@ def create_study_app():
 if __name__ == "__main__":
     print("🔄 Patient Education Chatbot Study initialized")
     app = create_study_app()
-    app.launch(debug=True, share=False)
+    app.launch(debug=True, share=False, favicon_path="assets/TheranosticFavicon.ico")
