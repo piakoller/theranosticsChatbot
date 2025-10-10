@@ -62,6 +62,50 @@ Please ask at least 3-5 questions about:
 Take your time and ask questions as if you were a real patient seeking information.
 """
 
+
+# Attitude & Expectations choices and text
+PRIOR_USE_CHOICES = ["Never used", "Used once", "Occasionally", "Frequently"]
+
+TRUST_LIKERT_MIN = 1
+TRUST_LIKERT_MAX = 7
+TRUST_LIKERT_DEFAULT = 4
+
+PREFERRED_CHANNELS_CHOICES = [
+    "Physician consultation",
+    "Printed leaflet",
+    "Hospital website",
+    "Chatbot",
+    "Patient forum",
+    "Video",
+    "Phone call",
+    "Other"
+]
+
+PRIMARY_EXPECTATIONS_CHOICES = [
+    "Clear explanations",
+    "Preparation steps",
+    "Side-effect guidance",
+    "Appointment reminders",
+    "Emotional reassurance",
+    "Links to further reading",
+    "Contact clinician option",
+    "Other"
+]
+
+CONCERNS_CHOICES = [
+    "Accuracy",
+    "Privacy",
+    "Misunderstanding my situation",
+    "Lack of empathy",
+    "Not tailored",
+    "Technical issues",
+    "None",
+    "Other"
+]
+
+ATTITUDE_TITLE = "## Attitude & Expectations"
+ATTITUDE_SUBTEXT = "Please tell us about your attitude towards chatbots and what you expect from them:"
+
 # CSS styling
 APP_CSS = """
 .gradio-container {
@@ -127,9 +171,39 @@ h1, h2, h3, h4, h5, h6 {
 .demographic-dropdown .arrow-down {
     color: #7c3aed !important;
 }
+
+/* App header styling */
+.app-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 12px !important;
+    padding: 12px 0 !important;
+}
+.app-header .icon {
+    width: 36px !important;
+    height: 36px !important;
+    display: inline-block !important;
+}
+.app-header h1 {
+    margin: 0 !important;
+    font-size: 1.25rem !important;
+    font-weight: 700 !important;
+}
 """
 
 # Study data configuration
 STUDY_TYPE = 'patient_education_chatbot'
 CHATBOT_CONTEXT = "patient_education_study"
 CHATBOT_SECTION = "interaction"
+
+# Consent / intro text
+CONSENT_TITLE = "# Participant Information & Consent"
+CONSENT_TEXT = (
+    "This study will evaluate a chatbot designed to provide patient education about theranostics treatments. "
+    "Your participation is voluntary. We will collect your responses and the chat interaction for research purposes. "
+    "All data will be anonymized and stored securely. No personal identifiers will be collected.\n\n"
+    "If you consent to participate and for your anonymized data to be used for research, please select 'I consent' below to continue."
+)
+
+CONSENT_CHOICES = ["I consent", "I do not consent"]

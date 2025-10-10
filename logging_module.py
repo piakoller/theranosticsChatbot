@@ -159,7 +159,7 @@ class ConversationLogger:
             print(f"File logging error: {e}")
             return False
     
-    def save_form_submission(self, form_data: Dict[str, Any]) -> str:
+    def save_form_submission(self, form_data: Dict[str, Any], session_id: Optional[str] = None) -> str:
         """
         Save form submission with MongoDB primary storage and file backup
         
@@ -175,12 +175,12 @@ class ConversationLogger:
 
         mongodb_success = False
         file_success = False
-        
-        # Add session tracking
+
+        # Add session tracking (allow caller-provided session_id)
         form_data_with_session = form_data.copy()
-        form_data_with_session["session_id"] = self.session_id
+        form_data_with_session["session_id"] = session_id or self.session_id
         form_data_with_session["submission_timestamp"] = datetime.now().isoformat()
-        
+
         # Try MongoDB first
         if self.mongodb_handler:
             try:
@@ -353,19 +353,24 @@ def log_conversation(user_input: str, bot_response: str,
     return conversation_logger.log_conversation(user_input, bot_response, context, section, model_used, metadata)
 
 
-def log_demographics(demographics_data: Dict[str, Any]) -> str:
-    """Log demographics data"""
-    return conversation_logger.save_form_submission(demographics_data)
+def log_demographics(demographics_data: Dict[str, Any], session_id: Optional[str] = None) -> str:
+    """Log demographics data (accept optional session_id)"""
+    return conversation_logger.save_form_submission(demographics_data, session_id)
 
 
-def log_interaction(interaction_data: Dict[str, Any]) -> str:
-    """Log interaction data"""
-    return conversation_logger.save_form_submission(interaction_data)
+def log_interaction(interaction_data: Dict[str, Any], session_id: Optional[str] = None) -> str:
+    """Log interaction data (accept optional session_id)"""
+    return conversation_logger.save_form_submission(interaction_data, session_id)
 
 
-def log_feedback(feedback_data: Dict[str, Any]) -> str:
-    """Log feedback data"""
-    return conversation_logger.save_form_submission(feedback_data)
+def log_feedback(feedback_data: Dict[str, Any], session_id: Optional[str] = None) -> str:
+    """Log feedback data (accept optional session_id)"""
+    return conversation_logger.save_form_submission(feedback_data, session_id)
+
+
+def save_form_submission(form_data: Dict[str, Any], session_id: Optional[str] = None) -> str:
+    """Alias for saving generic form submissions with optional session_id"""
+    return conversation_logger.save_form_submission(form_data, session_id)
 
 
 def get_session_id() -> str:

@@ -9,6 +9,8 @@ import logging_module
 from chatbot import TheranosticsBot
 from study_config import MINIMUM_QUESTIONS
 
+from study_config import CONSENT_CHOICES
+
 # Initialize chatbot
 theranostics_bot = TheranosticsBot()
 
@@ -58,10 +60,10 @@ def save_demographics(age, gender, education, medical_background, chatbot_experi
         'chatbot_experience': chatbot_experience
     }
     try:
-        logging_module.log_demographics(demographics_data)
+        logging_module.log_demographics(demographics_data, session_id)
     except Exception:
         # Fallback to generic logging if specific function isn't available
-        logging_module.save_form_submission(demographics_data)
+        logging_module.save_form_submission(demographics_data, session_id)
 
     return (
         gr.update(visible=False),  # Hide demographics
@@ -70,16 +72,52 @@ def save_demographics(age, gender, education, medical_background, chatbot_experi
     )
 
 
-def save_attitude(attitude_val, trust_sources_val, expectations_val, session_id):
-    """Save attitude & expectations data and proceed to chatbot interaction"""
+def save_consent(consent_value, session_id):
+    """Validate consent radio and proceed to demographics if consent given"""
+    # If user did not consent, keep them on the consent page (no progression)
+    if consent_value is None or consent_value != CONSENT_CHOICES[0]:
+        # Return no-op updates: keep consent visible
+        return (
+            gr.update(visible=True),   # consent_section stays visible
+            gr.update(),                # demographics_section unchanged
+            session_id
+        )
+
+    # Log consent decision (anonymized)
+    consent_data = {
+        'session_id': session_id,
+        'timestamp': datetime.now().isoformat(),
+        'consent': consent_value
+    }
+    try:
+        logging_module.save_form_submission(consent_data)
+    except Exception:
+        logging_module.log_interaction({'type': 'consent', **consent_data})
+
+    # Proceed to demographics
+    return (
+        gr.update(visible=False),  # Hide consent
+        gr.update(visible=True),   # Show demographics
+        session_id
+    )
+
+
+def save_attitude(prior_use_val, trust_likert_val, preferred_channels_val, preferred_other_val, primary_expectations_val, expectations_other_val, concerns_val, concerns_other_val, session_id):
+    """Save detailed attitude & expectations data and proceed to chatbot interaction"""
     attitude_data = {
         'session_id': session_id,
         'timestamp': datetime.now().isoformat(),
-        'attitude': attitude_val,
-        'trust_sources': trust_sources_val,
-        'expectations': expectations_val
+        'prior_use': prior_use_val,
+        'trust_likert': trust_likert_val,
+        'preferred_channels': preferred_channels_val,
+        'preferred_other': preferred_other_val,
+        'primary_expectations': primary_expectations_val,
+        'expectations_other': expectations_other_val,
+        'concerns': concerns_val,
+        'concerns_other': concerns_other_val
     }
-    logging_module.log_interaction({'type': 'attitude', **attitude_data})
+    # Log under a dedicated type for easier querying
+    logging_module.log_interaction({'type': 'attitude', **attitude_data}, session_id)
 
     return (
         gr.update(visible=False),  # Hide attitude
@@ -176,7 +214,7 @@ def submit_study(usefulness, accuracy, ease_of_use, trust, would_use, improvemen
         'overall_feedback': overall_feedback
     }
     
-    logging_module.log_feedback(feedback_data)
+    logging_module.log_feedback(feedback_data, session_id)
     
     # Show thank you section and hide others
     return (

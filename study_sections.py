@@ -10,11 +10,19 @@ from study_config import (
     RATING_SCALE, WOULD_USE_OPTIONS, STUDY_INSTRUCTIONS,
     CHATBOT_HEIGHT, APP_TITLE
 )
+from study_config import (
+    PRIOR_USE_CHOICES, TRUST_LIKERT_MIN, TRUST_LIKERT_MAX, TRUST_LIKERT_DEFAULT,
+    PREFERRED_CHANNELS_CHOICES, PRIMARY_EXPECTATIONS_CHOICES, CONCERNS_CHOICES,
+    ATTITUDE_TITLE, ATTITUDE_SUBTEXT
+)
+from study_config import (
+    CONSENT_TITLE, CONSENT_TEXT, CONSENT_CHOICES
+)
 
 
 def create_demographics_section():
     """Create the demographics collection section"""
-    with gr.Column(visible=True) as demographics_section:
+    with gr.Column(visible=False) as demographics_section:
         gr.Markdown(f"# {APP_TITLE}")
         gr.Markdown("## Demographics Information")
         gr.Markdown("Please provide some basic information about yourself:")
@@ -59,36 +67,94 @@ def create_demographics_section():
     return demographics_section, age, gender, education, medical_background, chatbot_experience, next_btn
 
 
-def create_attitude_section():
-    """Create a section to collect attitude towards chatbots and expectations"""
-    with gr.Column(visible=False) as attitude_section:
-        gr.Markdown("## Attitude & Expectations")
-        gr.Markdown("Please tell us about your attitude towards chatbots and what you expect from them:")
+def create_consent_section():
+    """Create an introductory consent section shown before demographics"""
+    with gr.Column(visible=True) as consent_section:
+        gr.Markdown(CONSENT_TITLE)
+        gr.Markdown(CONSENT_TEXT)
 
-        attitude = gr.Radio(
-            label="Overall attitude towards chatbots",
-            choices=["Very positive", "Somewhat positive", "Neutral", "Somewhat negative", "Very negative"],
+        consent_radio = gr.Radio(
+            label="Do you consent to participate and for anonymized data to be used for research?",
+            choices=CONSENT_CHOICES,
             value=None,
             elem_classes=["label-wrap"]
         )
 
-        trust_sources = gr.CheckboxGroup(
-            label="Which sources would make you trust a chatbot? (choose all that apply)",
-            choices=["Hospital/Clinic endorsement", "Physician recommendation", "Cited sources/references", "Accurate answers consistently", "Data privacy assurances"],
-            value=[],
+        consent_next = gr.Button("Next", variant="primary")
+
+    return consent_section, consent_radio, consent_next
+
+
+def create_attitude_section():
+    """Create a section to collect attitude towards chatbots and expectations"""
+    with gr.Column(visible=False) as attitude_section:
+        gr.Markdown(ATTITUDE_TITLE)
+        gr.Markdown(ATTITUDE_SUBTEXT)
+
+        # 1. Prior use of health chatbots (required)
+        prior_use = gr.Radio(
+            label="Prior use of health chatbots",
+            choices=PRIOR_USE_CHOICES,
+            value=None,
             elem_classes=["label-wrap"]
         )
 
-        expectations = gr.Textbox(
-            label="What do you expect from a healthcare chatbot?",
-            lines=3,
-            placeholder="E.g., clear explanations, references, empathy, referral to specialists...",
+        # 2. Trust in automated health information (Likert 1-7, required)
+        trust_likert = gr.Slider(
+            label="Trust in automated health information",
+            minimum=TRUST_LIKERT_MIN,
+            maximum=TRUST_LIKERT_MAX,
+            value=TRUST_LIKERT_DEFAULT,
+            step=1,
+            info="1 = Not trustworthy; 7 = Completely trustworthy",
+            elem_classes=["label-wrap"]
+        )
+
+        # 3. Preferred channels for health information (multiple choice, required)
+        preferred_channels = gr.CheckboxGroup(
+            label="Preferred channels for health information",
+            choices=PREFERRED_CHANNELS_CHOICES,
+            value=[],
+            elem_classes=["label-wrap"]
+        )
+        preferred_other = gr.Textbox(
+            label="If Other (preferred channels), please specify",
+            lines=1,
+            placeholder="Other channel...",
+            elem_classes=["label-wrap"]
+        )
+
+        # 4. Primary expectations from a chatbot (multiple choice with Other, required)
+        primary_expectations = gr.CheckboxGroup(
+            label="Primary expectations from a chatbot",
+            choices=PRIMARY_EXPECTATIONS_CHOICES,
+            value=[],
+            elem_classes=["label-wrap"]
+        )
+        expectations_other = gr.Textbox(
+            label="If Other (expectations), please specify",
+            lines=1,
+            placeholder="Other expectation...",
+            elem_classes=["label-wrap"]
+        )
+
+        # 5. Biggest concerns about chatbots (checkboxes)
+        concerns = gr.CheckboxGroup(
+            label="Biggest concerns about chatbots",
+            choices=CONCERNS_CHOICES,
+            value=[],
+            elem_classes=["label-wrap"]
+        )
+        concerns_other = gr.Textbox(
+            label="If Other (concerns), please specify",
+            lines=1,
+            placeholder="Other concern...",
             elem_classes=["label-wrap"]
         )
 
         attitude_next = gr.Button("Next", variant="primary")
 
-    return attitude_section, attitude, trust_sources, expectations, attitude_next
+    return attitude_section, prior_use, trust_likert, preferred_channels, preferred_other, primary_expectations, expectations_other, concerns, concerns_other, attitude_next
 
 
 def create_chatbot_section():
@@ -101,7 +167,8 @@ def create_chatbot_section():
             label="Patient Education Chatbot",
             height=CHATBOT_HEIGHT,
             show_label=True,
-            type="messages"
+            type="messages",
+            elem_classes=["label-wrap"]
         )
         
         msg = gr.Textbox(
