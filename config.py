@@ -1,14 +1,18 @@
 # OpenRouter and LLM configuration for IAEA Chatbot
 import os
-from dotenv import load_dotenv
 
-# Load environment variables from .env file
-# Look for .env in parent directory (IAEA Chatbot folder)
-parent_env = os.path.join(os.path.dirname(__file__), '..', '.env')
-if os.path.exists(parent_env):
-    load_dotenv(parent_env)
-else:
-    load_dotenv()  # Fallback to current directory
+# Try to load environment variables from .env file (for local development)
+try:
+    from dotenv import load_dotenv
+    # Look for .env in parent directory (IAEA Chatbot folder)
+    parent_env = os.path.join(os.path.dirname(__file__), '..', '.env')
+    if os.path.exists(parent_env):
+        load_dotenv(parent_env)
+    else:
+        load_dotenv()  # Fallback to current directory
+except ImportError:
+    # dotenv not available (e.g., in HuggingFace Spaces) - use environment variables directly
+    print("⚠️  python-dotenv not installed. Using environment variables directly.")
 
 LLM_TEMPERATURE = 0.1  # Slightly higher for more natural responses
 MAX_TOKENS = 500  # Reduced for faster responses - still good for most queries

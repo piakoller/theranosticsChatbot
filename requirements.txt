@@ -1,0 +1,6 @@
+gradio>=4.0.0
+pymongo
+python-dotenv
+openai
+requests
+Pillow
