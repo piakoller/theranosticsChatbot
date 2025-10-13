@@ -183,13 +183,22 @@ class TheranosticsBot:
                             continue
                         elif not should_fallback:
                             # For non-fallback errors, return specific message
-                            return f"I encountered an issue with the language model. Please try again or contact support if this persists."
+                            if lang == 'de':
+                                return "Ich habe ein Problem mit dem Sprachmodell. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support, falls das Problem weiterhin besteht."
+                            else:
+                                return "I encountered an issue with the language model. Please try again or contact support if this persists."
                         else:
                             # All models failed
                             if first_model_failed:
-                                return "I'm experiencing technical difficulties with all available AI models. Please try again in a few moments, and I'll do my best to help you."
+                                if lang == 'de':
+                                    return "Ich habe derzeit technische Schwierigkeiten mit allen verfügbaren KI-Modellen. Bitte versuchen Sie es in wenigen Augenblicken erneut, und ich werde mein Bestes geben, Ihnen zu helfen."
+                                else:
+                                    return "I'm experiencing technical difficulties with all available AI models. Please try again in a few moments, and I'll do my best to help you."
                             else:
-                                return "All language models are currently experiencing issues. Please try again in a few moments."
+                                if lang == 'de':
+                                    return "Alle Sprachmodelle haben derzeit Probleme. Bitte versuchen Sie es in wenigen Augenblicken erneut."
+                                else:
+                                    return "All language models are currently experiencing issues. Please try again in a few moments."
                             
                     except (ValueError, KeyError):
                         # If we can't parse the error response, treat as generic error
@@ -200,7 +209,10 @@ class TheranosticsBot:
                             print(f"🔄 Trying backup model: {models_to_try[i+1]}")
                             continue
                         else:
-                            return "I'm having trouble connecting to the language model. Please try again in a few moments."
+                            if lang == 'de':
+                                return "Ich habe Schwierigkeiten, eine Verbindung zum Sprachmodell herzustellen. Bitte versuchen Sie es in wenigen Augenblicken erneut."
+                            else:
+                                return "I'm having trouble connecting to the language model. Please try again in a few moments."
                         
             except requests.exceptions.Timeout:
                 print(f"⏱️ Timeout with model {model}")
@@ -210,7 +222,10 @@ class TheranosticsBot:
                     print(f"🔄 Trying backup model: {models_to_try[i+1]}")
                     continue
                 else:
-                    return "The request timed out. Please try asking your question again."
+                    if lang == 'de':
+                        return "Die Anfrage ist abgelaufen. Bitte stellen Sie Ihre Frage erneut."
+                    else:
+                        return "The request timed out. Please try asking your question again."
             except Exception as e:
                 print(f"❌ Error with model {model}: {e}")
                 if i < len(models_to_try) - 1:
@@ -219,22 +234,39 @@ class TheranosticsBot:
                     print(f"🔄 Trying backup model: {models_to_try[i+1]}")
                     continue
                 else:
-                    return "I apologize, but I'm having trouble processing your request right now. Please try again."
+                    if lang == 'de':
+                        return "Es tut mir leid, aber ich habe derzeit Schwierigkeiten, Ihre Anfrage zu bearbeiten. Bitte versuchen Sie es erneut."
+                    else:
+                        return "I apologize, but I'm having trouble processing your request right now. Please try again."
         
         # If we get here, all models failed
         if first_model_failed:
-            return "I'm currently experiencing technical difficulties with all available AI models. Please try again in a few moments, and I'll do my best to help you with your question."
+            if lang == 'de':
+                return "Ich habe derzeit technische Schwierigkeiten mit allen verfügbaren KI-Modellen. Bitte versuchen Sie es in wenigen Augenblicken erneut, und ich werde mein Bestes geben, Ihnen bei Ihrer Frage zu helfen."
+            else:
+                return "I'm currently experiencing technical difficulties with all available AI models. Please try again in a few moments, and I'll do my best to help you with your question."
         else:
-            return "I'm unable to process your request at the moment. Please try again later."
+            if lang == 'de':
+                return "Ich kann Ihre Anfrage derzeit nicht bearbeiten. Bitte versuchen Sie es später erneut."
+            else:
+                return "I'm unable to process your request at the moment. Please try again later."
     
-    def get_fallback_response(self):
+    def get_fallback_response(self, lang='en'):
         """Get a fallback response when API is not available"""
-        fallback_responses = [
-            "I'm currently running in fallback mode. Please ensure OPENROUTER_API_KEY is set in your environment.",
-            "I understand you have questions about your treatment. Please feel free to ask about anything that concerns you.",
-            "Theranostics can seem complex, but I'm here to explain it in simple terms. What would you like to know?",
-            "Many patients have similar concerns about nuclear medicine treatments. What specific questions do you have?",
-        ]
+        if lang == 'de':
+            fallback_responses = [
+                "Ich befinde mich derzeit im Fallback-Modus. Bitte stellen Sie sicher, dass OPENROUTER_API_KEY in Ihrer Umgebung gesetzt ist.",
+                "Ich verstehe, dass Sie Fragen zu Ihrer Behandlung haben. Fragen Sie gerne alles, was Sie beschäftigt.",
+                "Theranostik kann komplex erscheinen, aber ich bin hier, um es in einfachen Begriffen zu erklären. Was möchten Sie wissen?",
+                "Viele Patienten haben ähnliche Bedenken bezüglich nuklearmedizinischer Behandlungen. Welche spezifischen Fragen haben Sie?",
+            ]
+        else:
+            fallback_responses = [
+                "I'm currently running in fallback mode. Please ensure OPENROUTER_API_KEY is set in your environment.",
+                "I understand you have questions about your treatment. Please feel free to ask about anything that concerns you.",
+                "Theranostics can seem complex, but I'm here to explain it in simple terms. What would you like to know?",
+                "Many patients have similar concerns about nuclear medicine treatments. What specific questions do you have?",
+            ]
         return random.choice(fallback_responses)
     
     def chatbot_response(self, message, history, context="main_chat", section=None, lang='en'):
@@ -243,10 +275,7 @@ class TheranosticsBot:
             response = self.generate_openrouter_response(message, history, context, section, lang=lang)
         else:
             # Provide language-appropriate fallback message
-            if lang == 'de':
-                response = "Der Dienst ist derzeit nicht verfügbar. Bitte versuchen Sie es später erneut."
-            else:
-                response = self.get_fallback_response()
+            response = self.get_fallback_response(lang=lang)
             # Still log fallback responses
             conversation_logger.log_conversation(message, response, context=context, section=section, model_used="fallback", metadata={"lang": lang})
         

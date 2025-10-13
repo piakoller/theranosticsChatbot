@@ -19,7 +19,7 @@ def proceed_to_chatbot(age, gender, education, medical_background, chatbot_exper
     """Handle transition from demographics to chatbot section"""
     # Validate required fields
     if not all([age, gender, education, medical_background, chatbot_experience]):
-        gr.Warning("Please fill in all fields before continuing.")
+        gr.Warning("Bitte füllen Sie alle Felder aus, bevor Sie fortfahren.")
         return (
             gr.update(),  # demographics_section
             gr.update(),  # chatbot_section  
@@ -140,12 +140,13 @@ def handle_chatbot_message(message, history, session_id, question_count):
     # Add current message
     conversation_history.append({"role": "user", "content": message})
     
-    # Get chatbot response
+    # Get chatbot response (using German language)
     response = theranostics_bot.chatbot_response(
         message, 
         conversation_history, 
         context="patient_education_study", 
-        section="interaction"
+        section="interaction",
+        lang="de"
     )
     
     # Update history in messages format
@@ -192,7 +193,7 @@ def submit_study(usefulness, accuracy, ease_of_use, trust, would_use, improvemen
     """Handle study submission"""
     # Validate required feedback fields
     if would_use is None:
-        gr.Warning("Please answer whether you would use this chatbot.")
+        gr.Warning("Bitte beantworten Sie, ob Sie diesen Chatbot verwenden würden.")
         return (
             gr.update(),  # demographics_section
             gr.update(),  # chatbot_section  

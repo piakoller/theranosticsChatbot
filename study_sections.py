@@ -24,45 +24,45 @@ def create_demographics_section():
     """Create the demographics collection section"""
     with gr.Column(visible=False) as demographics_section:
         gr.Markdown(f"# {APP_TITLE}")
-        gr.Markdown("## Demographics Information")
-        gr.Markdown("Please provide some basic information about yourself:")
+        gr.Markdown("## Demografische Informationen")
+        gr.Markdown("Bitte geben Sie einige grundlegende Informationen über sich an:")
         
         age = gr.Dropdown(
-            label="Age Group",
+            label="Altersgruppe",
             choices=AGE_GROUPS,
             value=None,
             elem_classes=["label-wrap"]
         )
         
         gender = gr.Radio(
-            label="Gender",
+            label="Geschlecht",
             choices=GENDER_OPTIONS,
             value=None,
             elem_classes=["label-wrap"]
         )
         
         education = gr.Dropdown(
-            label="Education Level",
+            label="Bildungsgrad",
             choices=EDUCATION_LEVELS,
             value=None,
             elem_classes=["label-wrap"]
         )
         
         medical_background = gr.Radio(
-            label="Do you have a medical background?",
+            label="Haben Sie einen medizinischen Hintergrund?",
             choices=MEDICAL_BACKGROUND_OPTIONS,
             value=None,
             elem_classes=["label-wrap"]
         )
         
         chatbot_experience = gr.Radio(
-            label="Have you used chatbots before?",
+            label="Wie oft verwenden Sie Chatbots?",
             choices=CHATBOT_EXPERIENCE_OPTIONS,
             value=None,
             elem_classes=["label-wrap"]
         )
         
-        next_btn = gr.Button("Next", variant="primary")
+        next_btn = gr.Button("Weiter", variant="primary")
         
     return demographics_section, age, gender, education, medical_background, chatbot_experience, next_btn
 
@@ -74,13 +74,13 @@ def create_consent_section():
         gr.Markdown(CONSENT_TEXT)
 
         consent_radio = gr.Radio(
-            label="Do you consent to participate and for anonymized data to be used for research?",
+            label="Stimmen Sie der Teilnahme und der Verwendung anonymisierter Daten für die Forschung zu?",
             choices=CONSENT_CHOICES,
             value=None,
             elem_classes=["label-wrap"]
         )
 
-        consent_next = gr.Button("Next", variant="primary")
+        consent_next = gr.Button("Weiter", variant="primary")
 
     return consent_section, consent_radio, consent_next
 
@@ -93,7 +93,7 @@ def create_attitude_section():
 
         # 1. Prior use of health chatbots (required)
         prior_use = gr.Radio(
-            label="Prior use of health chatbots",
+            label="Haben Sie schon Chatbots verwendet um Informationen zu Gesundheitsthemen zu erhalten?",
             choices=PRIOR_USE_CHOICES,
             value=None,
             elem_classes=["label-wrap"]
@@ -101,58 +101,58 @@ def create_attitude_section():
 
         # 2. Trust in automated health information (Likert 1-7, required)
         trust_likert = gr.Slider(
-            label="Trust in automated health information",
+            label="Vertrauen Sie Gesundheitsinformationen, die KI-generiert sind?",
             minimum=TRUST_LIKERT_MIN,
             maximum=TRUST_LIKERT_MAX,
             value=TRUST_LIKERT_DEFAULT,
             step=1,
-            info="1 = Not trustworthy; 7 = Completely trustworthy",
+            info="1 = Nicht vertrauenswürdig; 7 = Völlig vertrauenswürdig",
             elem_classes=["label-wrap"]
         )
 
         # 3. Preferred channels for health information (multiple choice, required)
         preferred_channels = gr.CheckboxGroup(
-            label="Preferred channels for health information",
+            label="Welcher ist Ihr bevorzugter Kanal, um Gesundheitsinformationen zu erhalten?",
             choices=PREFERRED_CHANNELS_CHOICES,
             value=[],
             elem_classes=["label-wrap"]
         )
         preferred_other = gr.Textbox(
-            label="If Other (preferred channels), please specify",
+            label="Falls Andere (bevorzugte Kanäle), bitte spezifizieren",
             lines=1,
-            placeholder="Other channel...",
+            placeholder="Anderer Kanal...",
             elem_classes=["label-wrap"]
         )
 
         # 4. Primary expectations from a chatbot (multiple choice with Other, required)
         primary_expectations = gr.CheckboxGroup(
-            label="Primary expectations from a chatbot",
+            label="Welche Erwartungen haben Sie an einen Gesundheits-Chatbot?",
             choices=PRIMARY_EXPECTATIONS_CHOICES,
             value=[],
             elem_classes=["label-wrap"]
         )
         expectations_other = gr.Textbox(
-            label="If Other (expectations), please specify",
+            label="Falls Andere (Erwartungen), bitte spezifizieren",
             lines=1,
-            placeholder="Other expectation...",
+            placeholder="Andere Erwartung...",
             elem_classes=["label-wrap"]
         )
 
         # 5. Biggest concerns about chatbots (checkboxes)
         concerns = gr.CheckboxGroup(
-            label="Biggest concerns about chatbots",
+            label="Welche Bedenken haben Sie gegenüber Gesundheits-Chatbots?",
             choices=CONCERNS_CHOICES,
             value=[],
             elem_classes=["label-wrap"]
         )
         concerns_other = gr.Textbox(
-            label="If Other (concerns), please specify",
+            label="Falls Andere (Bedenken), bitte spezifizieren",
             lines=1,
-            placeholder="Other concern...",
+            placeholder="Andere Bedenken...",
             elem_classes=["label-wrap"]
         )
 
-        attitude_next = gr.Button("Next", variant="primary")
+        attitude_next = gr.Button("Weiter", variant="primary")
 
     return attitude_section, prior_use, trust_likert, preferred_channels, preferred_other, primary_expectations, expectations_other, concerns, concerns_other, attitude_next
 
@@ -160,11 +160,11 @@ def create_attitude_section():
 def create_chatbot_section():
     """Create the chatbot interaction section"""
     with gr.Column(visible=False) as chatbot_section:
-        gr.Markdown("## Chatbot Interaction")
+        gr.Markdown("## Chatbot-Interaktion")
         gr.Markdown(STUDY_INSTRUCTIONS)
         
         chatbot = gr.Chatbot(
-            label="Patient Education Chatbot",
+            label="Patientenaufklärungs-Chatbot",
             height=CHATBOT_HEIGHT,
             show_label=True,
             type="messages",
@@ -172,20 +172,20 @@ def create_chatbot_section():
         )
         
         msg = gr.Textbox(
-            label="Your message",
-            placeholder="Type your question here and press Enter to send...",
+            label="Ihre Nachricht",
+            placeholder="Geben Sie hier Ihre Frage ein und drücken Sie Enter zum Senden...",
             lines=1,
             max_lines=3,
             autofocus=True,
             elem_classes=["label-wrap"]
         )
         
-        send_btn = gr.Button("Send", variant="primary")
-        clear_btn = gr.Button("Clear Chat", variant="secondary")
+        send_btn = gr.Button("Senden", variant="primary")
+        clear_btn = gr.Button("Chat löschen", variant="secondary")
         
-        question_counter = gr.Markdown("**Questions asked: 0**")
+        question_counter = gr.Markdown("**Gestellte Fragen: 0**")
         
-        next_btn = gr.Button("Complete Interaction & Give Feedback", variant="primary", visible=False)
+        next_btn = gr.Button("Interaktion beenden & Feedback geben", variant="primary", visible=False)
         
     return chatbot_section, chatbot, msg, send_btn, clear_btn, question_counter, next_btn
 
@@ -194,63 +194,63 @@ def create_feedback_section():
     """Create the feedback collection section"""
     with gr.Column(visible=False) as feedback_section:
         gr.Markdown("## Feedback")
-        gr.Markdown("Please provide your feedback about the chatbot interaction:")
+        gr.Markdown("Bitte geben Sie Ihr Feedback zur Chatbot-Interaktion:")
         
         usefulness = gr.Slider(
-            label="How useful was the chatbot for patient education?",
+            label="Wie nützlich war der Chatbot für die Patientenaufklärung?",
             minimum=RATING_SCALE['min'],
             maximum=RATING_SCALE['max'],
             value=RATING_SCALE['default'],
             step=RATING_SCALE['step'],
-            info="1 = Not useful at all, 10 = Extremely useful"
+            info="1 = Überhaupt nicht nützlich, 10 = Äußerst nützlich"
         )
         
         accuracy = gr.Slider(
-            label="How accurate did the information seem?",
+            label="Wie genau schienen die Informationen?",
             minimum=RATING_SCALE['min'],
             maximum=RATING_SCALE['max'],
             value=RATING_SCALE['default'],
             step=RATING_SCALE['step'],
-            info="1 = Very inaccurate, 10 = Very accurate"
+            info="1 = Sehr ungenau, 10 = Sehr genau"
         )
         
         ease_of_use = gr.Slider(
-            label="How easy was it to use the chatbot?",
+            label="Wie einfach war die Verwendung des Chatbots?",
             minimum=RATING_SCALE['min'],
             maximum=RATING_SCALE['max'],
             value=RATING_SCALE['default'],
             step=RATING_SCALE['step'],
-            info="1 = Very difficult, 10 = Very easy"
+            info="1 = Sehr schwierig, 10 = Sehr einfach"
         )
         
         trust = gr.Slider(
-            label="How much would you trust this chatbot for health information?",
+            label="Wie sehr würden Sie diesem Chatbot für Gesundheitsinformationen vertrauen?",
             minimum=RATING_SCALE['min'],
             maximum=RATING_SCALE['max'],
             value=RATING_SCALE['default'],
             step=RATING_SCALE['step'],
-            info="1 = No trust at all, 10 = Complete trust"
+            info="1 = Überhaupt kein Vertrauen, 10 = Vollständiges Vertrauen"
         )
         
         would_use = gr.Radio(
-            label="Would you use this chatbot in a real healthcare setting?",
+            label="Würden Sie diesen Chatbot in einer echten Gesundheitsumgebung verwenden?",
             choices=WOULD_USE_OPTIONS,
             value=None
         )
         
         improvements = gr.Textbox(
-            label="What improvements would you suggest?",
+            label="Welche Verbesserungen würden Sie vorschlagen?",
             lines=3,
-            placeholder="Please describe any improvements or additional features..."
+            placeholder="Bitte beschreiben Sie Verbesserungen oder zusätzliche Funktionen..."
         )
         
         overall_feedback = gr.Textbox(
-            label="Any other comments or feedback?",
+            label="Weitere Kommentare oder Feedback?",
             lines=3,
-            placeholder="Feel free to share any additional thoughts..."
+            placeholder="Teilen Sie gerne weitere Gedanken mit..."
         )
         
-        submit_btn = gr.Button("Submit Study", variant="primary")
+        submit_btn = gr.Button("Studie abschicken", variant="primary")
         
     return feedback_section, usefulness, accuracy, ease_of_use, trust, would_use, improvements, overall_feedback, submit_btn
 
@@ -258,13 +258,13 @@ def create_feedback_section():
 def create_thank_you_section():
     """Create the thank you completion section"""
     with gr.Column(visible=False) as thank_you_section:
-        gr.Markdown("## Thank you for participating!")
+        gr.Markdown("## Vielen Dank für Ihre Teilnahme!")
         gr.Markdown("""
-        Your responses have been recorded and will help improve chatbot-based patient education tools.
+        Ihre Antworten wurden aufgezeichnet und werden zur Verbesserung von Chatbot-basierten Patientenaufklärungstools beitragen.
         
-        Your feedback is valuable for advancing healthcare technology.
+        Ihr Feedback ist wertvoll für die Weiterentwicklung der Gesundheitstechnologie.
         
-        You can now close this window.
+        Sie können dieses Fenster jetzt schließen.
         """)
         
     return thank_you_section

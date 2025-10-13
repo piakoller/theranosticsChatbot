@@ -30,7 +30,7 @@ def create_study_app():
         <span class='icon'>
             <img src='data:image/svg+xml;base64,{svg_data}' style='width:5em;height:5em;display:inline-block' />
         </span>
-        <h1>Theranostics Chatbot</h1>
+        <h1>Theranostik-Chatbot</h1>
         </div>
         """)
 

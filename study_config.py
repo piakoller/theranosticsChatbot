@@ -7,7 +7,7 @@ Contains constants and settings for the Patient Education Chatbot Study
 STUDY_SECTIONS = ['demographics', 'chatbot_interaction', 'feedback']
 
 # UI Configuration
-APP_TITLE = "Patient Education Chatbot Study"
+APP_TITLE = "Patientenaufklärungs-Chatbot Studie"
 MAX_WIDTH = "800px"
 CHATBOT_HEIGHT = 400
 MINIMUM_QUESTIONS = 3
@@ -15,20 +15,20 @@ MINIMUM_QUESTIONS = 3
 # Demographics choices
 AGE_GROUPS = ["18-25", "26-35", "36-45", "46-55", "56-65", "65+"]
 
-GENDER_OPTIONS = ["Male", "Female", "Other", "Prefer not to say"]
+GENDER_OPTIONS = ["Männlich", "Weiblich", "Andere", "Keine Angabe"]
 
 EDUCATION_LEVELS = [
-    "High school or less",
-    "Some college",
-    "Bachelor's degree", 
-    "Master's degree",
-    "Doctoral degree",
-    "Other"
+    "Hauptschule oder weniger",
+    "Weiterführende Schule", 
+    "Bachelor-Abschluss",
+    "Master-Abschluss",
+    "Doktorat",
+    "Andere"
 ]
 
-MEDICAL_BACKGROUND_OPTIONS = ["Yes", "No"]
+MEDICAL_BACKGROUND_OPTIONS = ["Ja", "Nein"]
 
-CHATBOT_EXPERIENCE_OPTIONS = ["Never", "Rarely", "Sometimes", "Often", "Very often"]
+CHATBOT_EXPERIENCE_OPTIONS = ["Nie", "Selten", "Manchmal", "Oft", "Sehr oft"]
 
 # Feedback scale options
 RATING_SCALE = {
@@ -39,72 +39,72 @@ RATING_SCALE = {
 }
 
 WOULD_USE_OPTIONS = [
-    "Definitely yes", 
-    "Probably yes", 
-    "Not sure", 
-    "Probably no", 
-    "Definitely no"
+    "Auf jeden Fall ja", 
+    "Wahrscheinlich ja", 
+    "Nicht sicher", 
+    "Wahrscheinlich nein", 
+    "Auf keinen Fall"
 ]
 
 # Study instructions
 STUDY_INSTRUCTIONS = """
-**Instructions:** You will now interact with a chatbot designed to provide patient education about theranostics treatments. 
+**Anweisungen:** Sie werden nun mit einem Chatbot interagieren, der zur Patientenaufklärung über Theranostik-Behandlungen entwickelt wurde.
 
-Please ask at least 3-5 questions about:
-- What is theranostics?
-- Treatment procedures
-- Side effects and management
-- Pre/post-treatment care
-- Any other questions you might have
+Stellen Sie bitte mindestens 3-5 Fragen zu:
+- Was ist Theranostik?
+- Behandlungsverfahren
+- Nebenwirkungen und deren Behandlung
+- Vor-/Nachbehandlung
+- Alle anderen Fragen, die Sie haben könnten
 
-**Tip:** Type your question and press **Enter** to send, or click the Send button.
+**Tipp:** Geben Sie Ihre Frage ein und drücken Sie **Enter** zum Senden, oder klicken Sie auf die Senden-Schaltfläche.
 
-Take your time and ask questions as if you were a real patient seeking information.
+Lassen Sie sich Zeit und stellen Sie Fragen, als wären Sie ein echter Patient, der Informationen sucht.
 """
 
 
 # Attitude & Expectations choices and text
-PRIOR_USE_CHOICES = ["Never used", "Used once", "Occasionally", "Frequently"]
+PRIOR_USE_CHOICES = ["Nie verwendet", "Einmal verwendet", "Gelegentlich", "Häufig"]
 
 TRUST_LIKERT_MIN = 1
 TRUST_LIKERT_MAX = 7
 TRUST_LIKERT_DEFAULT = 4
 
 PREFERRED_CHANNELS_CHOICES = [
-    "Physician consultation",
-    "Printed leaflet",
-    "Hospital website",
+    "Arztgespräch",
+    "Gedrucktes Informationsblatt",
+    "Krankenhaus-Website",
     "Chatbot",
-    "Patient forum",
+    "Patientenforum",
     "Video",
-    "Phone call",
-    "Other"
+    "Telefonanruf",
+    "Andere"
 ]
 
 PRIMARY_EXPECTATIONS_CHOICES = [
-    "Clear explanations",
-    "Preparation steps",
-    "Side-effect guidance",
-    "Appointment reminders",
-    "Emotional reassurance",
-    "Links to further reading",
-    "Contact clinician option",
-    "Other"
+    "Klare Erklärungen",
+    "Vorbereitungsschritte",
+    "Nebenwirkungsberatung",
+    "Terminerinnerungen",
+    "Emotionale Beruhigung",
+    "Links zu weiteren Informationen",
+    "Kontakt zum Arzt",
+    "Andere"
 ]
 
 CONCERNS_CHOICES = [
-    "Accuracy",
-    "Privacy",
-    "Misunderstanding my situation",
-    "Lack of empathy",
-    "Not tailored",
-    "Technical issues",
-    "None",
-    "Other"
+    "Genauigkeit",
+    "Datenschutz",
+    "Missverständnis meiner Situation",
+    "Mangel an Empathie",
+    "Nicht individualisiert",
+    "Technische Probleme",
+    "Keine",
+    "Andere"
 ]
 
-ATTITUDE_TITLE = "## Attitude & Expectations"
-ATTITUDE_SUBTEXT = "Please tell us about your attitude towards chatbots and what you expect from them:"
+ATTITUDE_TITLE = "## Einstellung & Erwartungen"
+ATTITUDE_SUBTEXT = "Bitte teilen Sie uns Ihre Einstellung zu Chatbots und Ihre Erwartungen mit:"
 
 # CSS styling
 APP_CSS = """
@@ -251,12 +251,12 @@ CHATBOT_CONTEXT = "patient_education_study"
 CHATBOT_SECTION = "interaction"
 
 # Consent / intro text
-CONSENT_TITLE = "# Participant Information & Consent"
+CONSENT_TITLE = "# Teilnehmerinformationen & Einverständniserklärung"
 CONSENT_TEXT = (
-    "This study will evaluate a chatbot designed to provide patient education about theranostics treatments. "
-    "Your participation is voluntary. We will collect your responses and the chat interaction for research purposes. "
-    "All data will be anonymized and stored securely. No personal identifiers will be collected.\n\n"
-    "If you consent to participate and for your anonymized data to be used for research, please select 'I consent' below to continue."
+    "Diese Studie wird einen Chatbot bewerten, der zur Patientenaufklärung über Theranostik-Behandlungen entwickelt wurde. "
+    "Ihre Teilnahme ist freiwillig. Wir werden Ihre Antworten und die Chat-Interaktion für Forschungszwecke sammeln. "
+    "Alle Daten werden anonymisiert und sicher gespeichert. Es werden keine persönlichen Identifikatoren gesammelt.\n\n"
+    "Wenn Sie der Teilnahme und der Verwendung Ihrer anonymisierten Daten für die Forschung zustimmen, wählen Sie bitte 'Ich stimme zu' unten aus, um fortzufahren."
 )
 
-CONSENT_CHOICES = ["I consent", "I do not consent"]
+CONSENT_CHOICES = ["Ich stimme zu", "Ich stimme nicht zu"]
