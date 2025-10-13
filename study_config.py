@@ -7,7 +7,7 @@ Contains constants and settings for the Patient Education Chatbot Study
 STUDY_SECTIONS = ['demographics', 'chatbot_interaction', 'feedback']
 
 # UI Configuration
-APP_TITLE = "Dosimetrie & Patientensicherheit Chatbot Studie"
+APP_TITLE = "Theranostik Chatbot"
 MAX_WIDTH = "800px"
 CHATBOT_HEIGHT = 400
 MINIMUM_QUESTIONS = 3
@@ -50,9 +50,9 @@ WOULD_USE_OPTIONS = [
 STUDY_INSTRUCTIONS = """
 **Anweisungen:** Sie werden nun mit einem Chatbot interagieren, der zur Patientenaufklärung über Dosimetrie und Patientensicherheit bei nuklearmedizinischen Behandlungen entwickelt wurde.
 
-Wählen Sie mindestens 3-5 Fragen aus den vordefinierten Schaltflächen unten aus. Die Fragen fokussieren auf Strahlendosimetrie, Sicherheitsmaßnahmen und Schutzmaßnahmen. Nach jeder Antwort des Chatbots können Sie eine Nachfrage stellen, um weitere Details zu erhalten.
+Wählen Sie mindestens 3-5 Fragen aus den vordefinierten Fragen unten aus. Die Fragen fokussieren auf Strahlendosimetrie, Sicherheitsmaßnahmen und Schutzmaßnahmen. Nach jeder Antwort des Chatbots können Sie **Nachfragen** stellen, um weitere Details zu erhalten.
 
-**Tipp:** Klicken Sie auf eine Schaltfläche, um eine Frage zu stellen. Nach der Antwort können Sie das Textfeld für Nachfragen verwenden.
+**Tipp:** Klicken Sie auf eine Frage, um sie dem Chatbot zu stellen. Nach der Antwort können Sie das Textfeld für Nachfragen so oft verwenden, wie Sie möchten.
 """
 
 # Predefined questions for the chatbot interaction
@@ -119,10 +119,12 @@ APP_CSS = """
     max-width: 800px !important;
     margin: auto !important;
     font-family: 'Segoe UI', 'Arial', sans-serif !important;
+    font-size: 16px !important; /* Increased base font size */
 }
 
 * {
     font-family: 'Segoe UI', 'Arial', sans-serif !important;
+    font-size: inherit !important; /* Inherit the larger base size */
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -130,9 +132,31 @@ h1, h2, h3, h4, h5, h6 {
     font-weight: 600 !important;
 }
 
+h1 { font-size: 2rem !important; }
+h2 { font-size: 1.75rem !important; }
+h3 { font-size: 1.5rem !important; }
+h4 { font-size: 1.25rem !important; }
+
 .gr-button {
     font-family: 'Segoe UI', 'Arial', sans-serif !important;
     font-weight: 500 !important;
+    font-size: 16px !important; /* Larger button text */
+    padding: 12px 24px !important; /* Larger button padding */
+}
+
+/* Larger text for form elements */
+.gr-textbox label,
+.gr-dropdown label,
+.gr-radio label,
+.gr-slider label {
+    font-size: 18px !important;
+    font-weight: 500 !important;
+}
+
+/* Larger text for chatbot messages */
+.gr-chatbot .message {
+    font-size: 16px !important;
+    line-height: 1.5 !important;
 }
 
 /* Style the actual input containers */
@@ -143,25 +167,28 @@ h1, h2, h3, h4, h5, h6 {
     border: 2px solid #e5e7eb !important;
     border-top: none !important;
     border-radius: 0 0 8px 8px !important;
-    padding: 8px !important;
+    padding: 12px !important; /* Increased padding */
     background: white !important;
+    font-size: 16px !important;
 }
 
 /* Style the label of our custom dropdowns */
 .demographic-dropdown .label-wrap {
     background: linear-gradient(90deg, #7c3aed, #a855f7) !important;
     color: white !important;
-    padding: 10px !important;
+    padding: 12px !important;
     border-top-left-radius: 6px !important;
     border-top-right-radius: 6px !important;
+    font-size: 18px !important;
 }
 
 /* Style the input area of the dropdown */
 .demographic-dropdown .svelte-1gfkn6j {
     background-color: #e0e7ff !important;
     color: #e0e7ff !important;
-    padding: 10px !important;
+    padding: 12px !important;
     width: 100% !important;
+    font-size: 16px !important;
 }
 .label-wrap .svelte-g2oxp3 {
     width: 100% !important;
@@ -202,7 +229,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .app-header h1 {
     margin: 0 !important;
-    font-size: clamp(1rem, 3vw, 1.5rem) !important;
+    font-size: clamp(1.2rem, 3vw, 1.8rem) !important; /* Increased header font size */
     font-weight: 700 !important;
 }
 
@@ -213,11 +240,14 @@ h1, h2, h3, h4, h5, h6 {
         height: 28px !important;
     }
     .app-header h1 {
-        font-size: 1.1rem !important;
+        font-size: 1.3rem !important;
     }
     .app-header {
         gap: 8px !important;
         padding: 8px 0 !important;
+    }
+    .gradio-container {
+        font-size: 14px !important;
     }
 }
 
@@ -227,7 +257,10 @@ h1, h2, h3, h4, h5, h6 {
         height: 32px !important;
     }
     .app-header h1 {
-        font-size: 1.2rem !important;
+        font-size: 1.4rem !important;
+    }
+    .gradio-container {
+        font-size: 15px !important;
     }
 }
 
@@ -237,7 +270,7 @@ h1, h2, h3, h4, h5, h6 {
         height: 36px !important;
     }
     .app-header h1 {
-        font-size: 1.3rem !important;
+        font-size: 1.5rem !important;
     }
 }
 
@@ -247,7 +280,7 @@ h1, h2, h3, h4, h5, h6 {
         height: 42px !important;
     }
     .app-header h1 {
-        font-size: 1.4rem !important;
+        font-size: 1.6rem !important;
     }
 }
 """

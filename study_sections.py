@@ -4,6 +4,7 @@ Contains UI section creation functions for the Patient Education Chatbot Study
 """
 
 import gradio as gr
+import random
 from study_config import (
     AGE_GROUPS, GENDER_OPTIONS, EDUCATION_LEVELS, 
     MEDICAL_BACKGROUND_OPTIONS, CHATBOT_EXPERIENCE_OPTIONS,
@@ -24,7 +25,7 @@ def create_demographics_section():
     """Create the demographics collection section"""
     with gr.Column(visible=False) as demographics_section:
         gr.Markdown(f"# {APP_TITLE}")
-        gr.Markdown("## Demografische Informationen")
+        gr.Markdown("## Angaben zur Person")
         gr.Markdown("Bitte geben Sie einige grundlegende Informationen über sich an:")
         
         age = gr.Dropdown(
@@ -62,9 +63,16 @@ def create_demographics_section():
             elem_classes=["label-wrap"]
         )
         
+        treatment_reason = gr.Textbox(
+            label="Weshalb befinden Sie sich für eine nuklearmedizinische Untersuchung im Spital?",
+            lines=2,
+            placeholder="z.B. PET-CT, Szintigraphie, Radiojodtherapie...",
+            elem_classes=["label-wrap"]
+        )
+        
         next_btn = gr.Button("Weiter", variant="primary")
         
-    return demographics_section, age, gender, education, medical_background, chatbot_experience, next_btn
+    return demographics_section, age, gender, education, medical_background, chatbot_experience, treatment_reason, next_btn
 
 
 def create_consent_section():
@@ -162,6 +170,22 @@ def create_chatbot_section():
     with gr.Column(visible=False) as chatbot_section:
         gr.Markdown("## Chatbot-Interaktion")
         gr.Markdown(STUDY_INSTRUCTIONS)
+
+        # Randomize the order of questions for display
+        randomized_questions = random.sample(PREDEFINED_QUESTIONS, len(PREDEFINED_QUESTIONS))
+        
+        # Create predefined question buttons
+        gr.Markdown("**Wählen Sie eine Frage aus:**")
+        question_buttons = []
+        with gr.Row():
+            with gr.Column():
+                for i, question in enumerate(randomized_questions[:5]):
+                    btn = gr.Button(question, variant="secondary", size="sm")
+                    question_buttons.append(btn)
+            with gr.Column():
+                for i, question in enumerate(randomized_questions[5:]):
+                    btn = gr.Button(question, variant="secondary", size="sm")
+                    question_buttons.append(btn)
         
         chatbot = gr.Chatbot(
             label="Chatbot",
@@ -171,26 +195,14 @@ def create_chatbot_section():
             elem_classes=["label-wrap"]
         )
         
-        # Create predefined question buttons
-        gr.Markdown("**Wählen Sie eine Frage aus:**")
-        question_buttons = []
-        with gr.Row():
-            with gr.Column():
-                for i, question in enumerate(PREDEFINED_QUESTIONS[:5]):
-                    btn = gr.Button(question, variant="secondary", size="sm")
-                    question_buttons.append(btn)
-            with gr.Column():
-                for i, question in enumerate(PREDEFINED_QUESTIONS[5:]):
-                    btn = gr.Button(question, variant="secondary", size="sm")
-                    question_buttons.append(btn)
-        
         # Follow-up question input (initially hidden)
         follow_up_section = gr.Column(visible=False)
         with follow_up_section:
-            gr.Markdown("**Nachfrage stellen:**")
+            gr.Markdown("Bitte besprechen Sie individuelle Fragen auch mit Ihrem behandelnden Arzt.")
+            gr.Markdown("**Nachfragen stellen (beliebig viele):**")
             msg = gr.Textbox(
                 label="Ihre Nachfrage",
-                placeholder="Stellen Sie hier eine Nachfrage zur letzten Antwort...",
+                placeholder="Stellen Sie hier Nachfragen zur letzten Antwort... Sie können mehrere Nachfragen stellen.",
                 lines=1,
                 max_lines=3,
                 elem_classes=["label-wrap"]

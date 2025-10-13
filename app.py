@@ -30,13 +30,13 @@ def create_study_app():
         <span class='icon'>
             <img src='data:image/svg+xml;base64,{svg_data}' style='width:5em;height:5em;display:inline-block' />
         </span>
-        <h1>Dosimetrie & Patientensicherheit Chatbot</h1>
+        <h1>Theranostik Chatbot</h1>
         </div>
         """)
 
         # Create all sections (consent shown first)
         consent_section, consent_radio, consent_next = create_consent_section()
-        demographics_section, age, gender, education, medical_background, chatbot_experience, demo_next = create_demographics_section()
+        demographics_section, age, gender, education, medical_background, chatbot_experience, treatment_reason, demo_next = create_demographics_section()
         # attitude_section, prior_use, trust_likert, preferred_channels, preferred_other, primary_expectations, expectations_other, concerns, concerns_other, attitude_next = create_attitude_section()
         chatbot_section, chatbot, question_buttons, follow_up_section, msg, send_btn, clear_btn, question_counter, chat_next = create_chatbot_section()
         feedback_section, usefulness, accuracy, ease_of_use, trust, would_use, improvements, overall_feedback, submit_btn = create_feedback_section()
@@ -46,7 +46,7 @@ def create_study_app():
         # After demographics, go directly to chatbot section (skip attitude)
         demo_next.click(
             save_demographics,
-            inputs=[age, gender, education, medical_background, chatbot_experience, session_id],
+            inputs=[age, gender, education, medical_background, chatbot_experience, treatment_reason, session_id],
             outputs=[demographics_section, chatbot_section, session_id]
         )
 
@@ -67,22 +67,21 @@ def create_study_app():
         send_btn.click(
             handle_follow_up_question,
             inputs=[msg, chatbot, session_id, question_count],
-            outputs=[msg, chatbot, question_count, chat_next]
+            outputs=[msg, chatbot, question_count, follow_up_section, chat_next]
         )
 
         msg.submit(
             handle_follow_up_question,
             inputs=[msg, chatbot, session_id, question_count],
-            outputs=[msg, chatbot, question_count, chat_next]
+            outputs=[msg, chatbot, question_count, follow_up_section, chat_next]
         )
 
         # Wire up predefined question buttons
-        for i, btn in enumerate(question_buttons):
+        # The buttons are created with randomized text, so we need to pass the text directly
+        for btn in question_buttons:
             btn.click(
-                lambda *args, question_idx=i: handle_predefined_question(
-                    PREDEFINED_QUESTIONS[question_idx], *args
-                ),
-                inputs=[chatbot, session_id, question_count],
+                handle_predefined_question,
+                inputs=[btn, chatbot, session_id, question_count],
                 outputs=[chatbot, question_count, follow_up_section, chat_next]
             )
 

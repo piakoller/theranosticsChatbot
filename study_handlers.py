@@ -51,7 +51,7 @@ def proceed_to_chatbot(age, gender, education, medical_background, chatbot_exper
     )
 
 
-def save_demographics(age, gender, education, medical_background, chatbot_experience, session_id):
+def save_demographics(age, gender, education, medical_background, chatbot_experience, treatment_reason, session_id):
     """Save demographics data and proceed directly to the chatbot section (skip attitude)"""
     demographics_data = {
         'session_id': session_id,
@@ -60,7 +60,8 @@ def save_demographics(age, gender, education, medical_background, chatbot_experi
         'gender': gender,
         'education': education,
         'medical_background': medical_background,
-        'chatbot_experience': chatbot_experience
+        'chatbot_experience': chatbot_experience,
+        'treatment_reason': treatment_reason
     }
     try:
         logging_module.log_demographics(demographics_data, session_id)
@@ -256,10 +257,10 @@ def handle_follow_up_question(message, history, session_id, question_count):
     
     logging_module.log_interaction(interaction_data)
     
-    # Show next button if minimum questions reached
+    # Show next button if minimum questions reached, keep follow-up section visible
     show_next = question_count >= MINIMUM_QUESTIONS
     
-    return "", history, question_count, gr.update(visible=show_next)
+    return "", history, question_count, gr.update(visible=True), gr.update(visible=show_next)
 
 
 def proceed_to_feedback(session_id):
