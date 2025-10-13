@@ -4,9 +4,9 @@ A clean, focused application for testing chatbot effectiveness in patient educat
 """
 
 import gradio as gr
-from study_config import APP_TITLE, MAX_WIDTH, APP_CSS
-from study_sections import create_demographics_section, create_attitude_section, create_chatbot_section, create_feedback_section, create_thank_you_section, create_consent_section
-from study_handlers import proceed_to_chatbot, save_demographics, save_attitude, handle_chatbot_message, proceed_to_feedback, submit_study, clear_chat, save_consent
+from study_config import APP_TITLE, MAX_WIDTH, APP_CSS, PREDEFINED_QUESTIONS
+from study_sections import create_demographics_section, create_chatbot_section, create_feedback_section, create_thank_you_section, create_consent_section
+from study_handlers import proceed_to_chatbot, save_demographics, handle_chatbot_message, proceed_to_feedback, submit_study, clear_chat, save_consent, handle_predefined_question, handle_follow_up_question
 from study_utils import generate_session_id
 
 import base64
@@ -30,24 +30,24 @@ def create_study_app():
         <span class='icon'>
             <img src='data:image/svg+xml;base64,{svg_data}' style='width:5em;height:5em;display:inline-block' />
         </span>
-        <h1>Theranostik-Chatbot</h1>
+        <h1>Dosimetrie & Patientensicherheit Chatbot</h1>
         </div>
         """)
 
         # Create all sections (consent shown first)
         consent_section, consent_radio, consent_next = create_consent_section()
         demographics_section, age, gender, education, medical_background, chatbot_experience, demo_next = create_demographics_section()
-        attitude_section, prior_use, trust_likert, preferred_channels, preferred_other, primary_expectations, expectations_other, concerns, concerns_other, attitude_next = create_attitude_section()
-        chatbot_section, chatbot, msg, send_btn, clear_btn, question_counter, chat_next = create_chatbot_section()
+        # attitude_section, prior_use, trust_likert, preferred_channels, preferred_other, primary_expectations, expectations_other, concerns, concerns_other, attitude_next = create_attitude_section()
+        chatbot_section, chatbot, question_buttons, follow_up_section, msg, send_btn, clear_btn, question_counter, chat_next = create_chatbot_section()
         feedback_section, usefulness, accuracy, ease_of_use, trust, would_use, improvements, overall_feedback, submit_btn = create_feedback_section()
         thank_you_section = create_thank_you_section()
 
         # Wire up event handlers
-        # After demographics, save and go to attitude section
+        # After demographics, go directly to chatbot section (skip attitude)
         demo_next.click(
             save_demographics,
             inputs=[age, gender, education, medical_background, chatbot_experience, session_id],
-            outputs=[demographics_section, attitude_section, session_id]
+            outputs=[demographics_section, chatbot_section, session_id]
         )
 
         # Consent flow: proceed to demographics only if consent given
@@ -57,28 +57,38 @@ def create_study_app():
             outputs=[consent_section, demographics_section, session_id]
         )
 
-        # Attitude section continues to chatbot
-        attitude_next.click(
-            save_attitude,
-            inputs=[prior_use, trust_likert, preferred_channels, preferred_other, primary_expectations, expectations_other, concerns, concerns_other, session_id],
-            outputs=[attitude_section, chatbot_section, session_id]
-        )
+        # Attitude section commented out - skip directly to chatbot
+        # attitude_next.click(
+        #     save_attitude,
+        #     inputs=[prior_use, trust_likert, preferred_channels, preferred_other, primary_expectations, expectations_other, concerns, concerns_other, session_id],
+        #     outputs=[attitude_section, chatbot_section, session_id]
+        # )
 
         send_btn.click(
-            handle_chatbot_message,
+            handle_follow_up_question,
             inputs=[msg, chatbot, session_id, question_count],
             outputs=[msg, chatbot, question_count, chat_next]
         )
 
         msg.submit(
-            handle_chatbot_message,
+            handle_follow_up_question,
             inputs=[msg, chatbot, session_id, question_count],
             outputs=[msg, chatbot, question_count, chat_next]
         )
 
+        # Wire up predefined question buttons
+        for i, btn in enumerate(question_buttons):
+            btn.click(
+                lambda *args, question_idx=i: handle_predefined_question(
+                    PREDEFINED_QUESTIONS[question_idx], *args
+                ),
+                inputs=[chatbot, session_id, question_count],
+                outputs=[chatbot, question_count, follow_up_section, chat_next]
+            )
+
         clear_btn.click(
             clear_chat,
-            outputs=[chatbot, question_count, chat_next]
+            outputs=[chatbot, question_count, follow_up_section, chat_next]
         )
 
         chat_next.click(

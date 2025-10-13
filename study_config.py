@@ -7,7 +7,7 @@ Contains constants and settings for the Patient Education Chatbot Study
 STUDY_SECTIONS = ['demographics', 'chatbot_interaction', 'feedback']
 
 # UI Configuration
-APP_TITLE = "Patientenaufklärungs-Chatbot Studie"
+APP_TITLE = "Dosimetrie & Patientensicherheit Chatbot Studie"
 MAX_WIDTH = "800px"
 CHATBOT_HEIGHT = 400
 MINIMUM_QUESTIONS = 3
@@ -48,19 +48,26 @@ WOULD_USE_OPTIONS = [
 
 # Study instructions
 STUDY_INSTRUCTIONS = """
-**Anweisungen:** Sie werden nun mit einem Chatbot interagieren, der zur Patientenaufklärung über Theranostik-Behandlungen entwickelt wurde.
+**Anweisungen:** Sie werden nun mit einem Chatbot interagieren, der zur Patientenaufklärung über Dosimetrie und Patientensicherheit bei nuklearmedizinischen Behandlungen entwickelt wurde.
 
-Stellen Sie bitte mindestens 3-5 Fragen zu:
-- Was ist Theranostik?
-- Behandlungsverfahren
-- Nebenwirkungen und deren Behandlung
-- Vor-/Nachbehandlung
-- Alle anderen Fragen, die Sie haben könnten
+Wählen Sie mindestens 3-5 Fragen aus den vordefinierten Schaltflächen unten aus. Die Fragen fokussieren auf Strahlendosimetrie, Sicherheitsmaßnahmen und Schutzmaßnahmen. Nach jeder Antwort des Chatbots können Sie eine Nachfrage stellen, um weitere Details zu erhalten.
 
-**Tipp:** Geben Sie Ihre Frage ein und drücken Sie **Enter** zum Senden, oder klicken Sie auf die Senden-Schaltfläche.
-
-Lassen Sie sich Zeit und stellen Sie Fragen, als wären Sie ein echter Patient, der Informationen sucht.
+**Tipp:** Klicken Sie auf eine Schaltfläche, um eine Frage zu stellen. Nach der Antwort können Sie das Textfeld für Nachfragen verwenden.
 """
+
+# Predefined questions for the chatbot interaction
+PREDEFINED_QUESTIONS = [
+    "Was ist Dosimetrie und warum ist sie wichtig?",
+    "Wie wird die Strahlendosis bei der Behandlung berechnet?",
+    "Welche Sicherheitsmaßnahmen gibt es zum Schutz vor Strahlung?",
+    "Wie lange bin ich nach der Behandlung radioaktiv?",
+    "Welche Vorsichtsmaßnahmen muss ich zu Hause beachten?",
+    "Ist die Strahlenbelastung für meine Familie gefährlich?",
+    "Wie wird meine Strahlendosis überwacht?",
+    "Welche Grenzwerte gibt es für die Strahlenexposition?",
+    "Wie schützt sich das medizinische Personal vor Strahlung?",
+    "Was passiert, wenn ich zu viel Strahlung abbekomme?"
+]
 
 
 # Attitude & Expectations choices and text
@@ -72,7 +79,7 @@ TRUST_LIKERT_DEFAULT = 4
 
 PREFERRED_CHANNELS_CHOICES = [
     "Arztgespräch",
-    "Gedrucktes Informationsblatt",
+    "Flyer/Informationsblatt",
     "Krankenhaus-Website",
     "Chatbot",
     "Patientenforum",
@@ -253,7 +260,8 @@ CHATBOT_SECTION = "interaction"
 # Consent / intro text
 CONSENT_TITLE = "# Teilnehmerinformationen & Einverständniserklärung"
 CONSENT_TEXT = (
-    "Diese Studie wird einen Chatbot bewerten, der zur Patientenaufklärung über Theranostik-Behandlungen entwickelt wurde. "
+    "Diese Studie wird einen Chatbot bewerten, der zur Patientenaufklärung über Dosimetrie und Patientensicherheit bei nuklearmedizinischen Behandlungen entwickelt wurde. "
+    "Der Fokus liegt auf Strahlenschutz, Dosisberechnungen und Sicherheitsmaßnahmen. "
     "Ihre Teilnahme ist freiwillig. Wir werden Ihre Antworten und die Chat-Interaktion für Forschungszwecke sammeln. "
     "Alle Daten werden anonymisiert und sicher gespeichert. Es werden keine persönlichen Identifikatoren gesammelt.\n\n"
     "Wenn Sie der Teilnahme und der Verwendung Ihrer anonymisierten Daten für die Forschung zustimmen, wählen Sie bitte 'Ich stimme zu' unten aus, um fortzufahren."

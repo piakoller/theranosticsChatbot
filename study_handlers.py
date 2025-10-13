@@ -7,12 +7,15 @@ import gradio as gr
 from datetime import datetime
 import logging_module
 from chatbot import TheranosticsBot
-from study_config import MINIMUM_QUESTIONS
+from study_config import MINIMUM_QUESTIONS, PREDEFINED_QUESTIONS
 
 from study_config import CONSENT_CHOICES
 
 # Initialize chatbot
 theranostics_bot = TheranosticsBot()
+
+# Global state for tracking asked questions
+asked_questions = set()
 
 
 def proceed_to_chatbot(age, gender, education, medical_background, chatbot_experience, session_id):
@@ -49,7 +52,7 @@ def proceed_to_chatbot(age, gender, education, medical_background, chatbot_exper
 
 
 def save_demographics(age, gender, education, medical_background, chatbot_experience, session_id):
-    """Save demographics data and proceed to the attitude section"""
+    """Save demographics data and proceed directly to the chatbot section (skip attitude)"""
     demographics_data = {
         'session_id': session_id,
         'timestamp': datetime.now().isoformat(),
@@ -67,7 +70,7 @@ def save_demographics(age, gender, education, medical_background, chatbot_experi
 
     return (
         gr.update(visible=False),  # Hide demographics
-        gr.update(visible=True),   # Show attitude
+        gr.update(visible=True),   # Show chatbot (skip attitude section)
         session_id
     )
 
@@ -174,6 +177,91 @@ def handle_chatbot_message(message, history, session_id, question_count):
     return "", history, question_count, gr.update(visible=show_next)
 
 
+def handle_predefined_question(question_text, history, session_id, question_count):
+    """Handle predefined question button clicks"""
+    global asked_questions
+    
+    # Track that this question has been asked
+    asked_questions.add(question_text)
+    
+    # Get bot response for the predefined question
+    conversation_history = history.copy() if history else []
+    conversation_history.append({"role": "user", "content": question_text})
+    
+    response = theranostics_bot.chatbot_response(
+        question_text,
+        conversation_history,
+        context="patient_education_study",
+        section="interaction",
+        lang="de"
+    )
+    
+    # Update history
+    history = history or []
+    history.append({"role": "user", "content": question_text})
+    history.append({"role": "assistant", "content": response})
+    
+    # Increment question counter
+    question_count += 1
+    
+    # Log the interaction
+    interaction_data = {
+        'session_id': session_id,
+        'timestamp': datetime.now().isoformat(),
+        'user_message': question_text,
+        'bot_response': response,
+        'question_number': question_count,
+        'question_type': 'predefined'
+    }
+    
+    logging_module.log_interaction(interaction_data)
+    
+    # Show follow-up section and check if next button should be visible
+    show_next = question_count >= MINIMUM_QUESTIONS
+    show_follow_up = True
+    
+    return history, question_count, gr.update(visible=show_follow_up), gr.update(visible=show_next)
+
+
+def handle_follow_up_question(message, history, session_id, question_count):
+    """Handle follow-up questions after predefined questions"""
+    if not message.strip():
+        return "", history, question_count, gr.update()
+    
+    # Get bot response for the follow-up question
+    conversation_history = history.copy() if history else []
+    conversation_history.append({"role": "user", "content": message})
+    
+    response = theranostics_bot.chatbot_response(
+        message,
+        conversation_history,
+        context="patient_education_study",
+        section="interaction",
+        lang="de"
+    )
+    
+    # Update history
+    history.append({"role": "user", "content": message})
+    history.append({"role": "assistant", "content": response})
+    
+    # Don't increment main question counter for follow-ups, but log them
+    interaction_data = {
+        'session_id': session_id,
+        'timestamp': datetime.now().isoformat(),
+        'user_message': message,
+        'bot_response': response,
+        'question_number': question_count,
+        'question_type': 'follow_up'
+    }
+    
+    logging_module.log_interaction(interaction_data)
+    
+    # Show next button if minimum questions reached
+    show_next = question_count >= MINIMUM_QUESTIONS
+    
+    return "", history, question_count, gr.update(visible=show_next)
+
+
 def proceed_to_feedback(session_id):
     """Handle transition from chatbot to feedback section"""
     return (
@@ -185,8 +273,10 @@ def proceed_to_feedback(session_id):
 
 
 def clear_chat():
-    """Clear the chat history"""
-    return [], 0, gr.update(visible=False)
+    """Clear the chat history and reset question tracking"""
+    global asked_questions
+    asked_questions.clear()
+    return [], 0, gr.update(visible=False), gr.update(visible=False)
 
 
 def submit_study(usefulness, accuracy, ease_of_use, trust, would_use, improvements, overall_feedback, session_id):

@@ -8,7 +8,7 @@ from study_config import (
     AGE_GROUPS, GENDER_OPTIONS, EDUCATION_LEVELS, 
     MEDICAL_BACKGROUND_OPTIONS, CHATBOT_EXPERIENCE_OPTIONS,
     RATING_SCALE, WOULD_USE_OPTIONS, STUDY_INSTRUCTIONS,
-    CHATBOT_HEIGHT, APP_TITLE
+    CHATBOT_HEIGHT, APP_TITLE, PREDEFINED_QUESTIONS
 )
 from study_config import (
     PRIOR_USE_CHOICES, TRUST_LIKERT_MIN, TRUST_LIKERT_MAX, TRUST_LIKERT_DEFAULT,
@@ -164,30 +164,46 @@ def create_chatbot_section():
         gr.Markdown(STUDY_INSTRUCTIONS)
         
         chatbot = gr.Chatbot(
-            label="Patientenaufklärungs-Chatbot",
+            label="Chatbot",
             height=CHATBOT_HEIGHT,
             show_label=True,
             type="messages",
             elem_classes=["label-wrap"]
         )
         
-        msg = gr.Textbox(
-            label="Ihre Nachricht",
-            placeholder="Geben Sie hier Ihre Frage ein und drücken Sie Enter zum Senden...",
-            lines=1,
-            max_lines=3,
-            autofocus=True,
-            elem_classes=["label-wrap"]
-        )
+        # Create predefined question buttons
+        gr.Markdown("**Wählen Sie eine Frage aus:**")
+        question_buttons = []
+        with gr.Row():
+            with gr.Column():
+                for i, question in enumerate(PREDEFINED_QUESTIONS[:5]):
+                    btn = gr.Button(question, variant="secondary", size="sm")
+                    question_buttons.append(btn)
+            with gr.Column():
+                for i, question in enumerate(PREDEFINED_QUESTIONS[5:]):
+                    btn = gr.Button(question, variant="secondary", size="sm")
+                    question_buttons.append(btn)
         
-        send_btn = gr.Button("Senden", variant="primary")
+        # Follow-up question input (initially hidden)
+        follow_up_section = gr.Column(visible=False)
+        with follow_up_section:
+            gr.Markdown("**Nachfrage stellen:**")
+            msg = gr.Textbox(
+                label="Ihre Nachfrage",
+                placeholder="Stellen Sie hier eine Nachfrage zur letzten Antwort...",
+                lines=1,
+                max_lines=3,
+                elem_classes=["label-wrap"]
+            )
+            send_btn = gr.Button("Nachfrage senden", variant="primary")
+        
         clear_btn = gr.Button("Chat löschen", variant="secondary")
         
         question_counter = gr.Markdown("**Gestellte Fragen: 0**")
         
         next_btn = gr.Button("Interaktion beenden & Feedback geben", variant="primary", visible=False)
         
-    return chatbot_section, chatbot, msg, send_btn, clear_btn, question_counter, next_btn
+    return chatbot_section, chatbot, question_buttons, follow_up_section, msg, send_btn, clear_btn, question_counter, next_btn
 
 
 def create_feedback_section():
