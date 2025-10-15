@@ -78,6 +78,31 @@ def proceed_to_chatbot(age, gender, education, medical_background, chatbot_exper
     )
 
 
+def save_chatbot_selection(chatbot_choice, session_id):
+    """Save the chatbot selection and proceed to demographics"""
+    # Set the logger's user ID to match the session ID
+    logging_module.set_user_id(session_id)
+    
+    # Save chatbot selection data
+    selection_data = {
+        'user_id': session_id,
+        'timestamp': datetime.now().isoformat(),
+        'chatbot_type': chatbot_choice
+    }
+    
+    try:
+        logging_module.save_form_submission(selection_data, user_id=session_id)
+    except Exception as e:
+        print(f"Warning: Failed to save chatbot selection: {e}")
+    
+    return (
+        gr.update(visible=False),  # Hide chatbot selection
+        gr.update(visible=True),   # Show demographics  
+        chatbot_choice,            # Update chatbot_type state
+        session_id
+    )
+
+
 def save_demographics(age, gender, education, medical_background, chatbot_experience, treatment_reason, session_id):
     """Save demographics data and proceed directly to the chatbot section (skip attitude)"""
     # Set the logger's user ID to match the session ID
@@ -331,7 +356,7 @@ def clear_chat():
     return [], 0, get_question_counter_text(0), gr.update(visible=False), gr.update(visible=False)
 
 
-def submit_study(usefulness, accuracy, ease_of_use, trust, would_use, improvements, overall_feedback, session_id):
+def submit_study(usefulness, accuracy, ease_of_use, trust, would_use, improvements, overall_feedback, session_id, chatbot_type="normal"):
     """Handle study submission"""
     # Validate required feedback fields
     if would_use is None:
@@ -354,7 +379,8 @@ def submit_study(usefulness, accuracy, ease_of_use, trust, would_use, improvemen
         'trust': trust,
         'would_use': would_use,
         'improvements': improvements,
-        'overall_feedback': overall_feedback
+        'overall_feedback': overall_feedback,
+        'chatbot_type': chatbot_type
     }
     
     logging_module.log_feedback(feedback_data, session_id)

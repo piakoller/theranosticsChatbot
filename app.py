@@ -6,7 +6,7 @@ A clean, focused application for testing chatbot effectiveness in patient educat
 import gradio as gr
 from study_config import MAX_WIDTH, APP_CSS, PREDEFINED_QUESTIONS
 from study_sections import create_demographics_section, create_chatbot_section, create_feedback_section, create_thank_you_section, create_consent_section, create_chatbot_selection_section
-from study_handlers import proceed_to_chatbot, save_demographics, handle_chatbot_message, proceed_to_feedback, submit_study, clear_chat, save_consent, handle_predefined_question, handle_follow_up_question
+from study_handlers import proceed_to_chatbot, save_demographics, handle_chatbot_message, proceed_to_feedback, submit_study, clear_chat, save_consent, handle_predefined_question, handle_follow_up_question, save_chatbot_selection
 from study_utils import generate_user_id
 
 import base64
@@ -82,10 +82,8 @@ def create_study_app():
         # Chatbot selection: proceed to demographics after selection
         selection_next.click(
             lambda chatbot_choice, sid: (
-                gr.update(visible=False),
-                gr.update(visible=True),
-                chatbot_choice,
-                update_chatbot_type_display(chatbot_choice)
+                save_chatbot_selection(chatbot_choice, sid)[0:3] + 
+                (update_chatbot_type_display(chatbot_choice),)
             ),
             inputs=[chatbot_type_radio, session_id],
             outputs=[chatbot_selection_section, demographics_section, chatbot_type, chatbot_type_display]
@@ -138,12 +136,12 @@ def create_study_app():
         )
 
         submit_btn.click(
-            lambda usefulness_val, accuracy_val, ease_val, trust_val, use_again_val, improve_val, overall_val, sid: (
-                submit_study(usefulness_val, accuracy_val, ease_val, trust_val, use_again_val, improve_val, overall_val, sid),
+            lambda usefulness_val, accuracy_val, ease_val, trust_val, use_again_val, improve_val, overall_val, sid, ctype: (
+                submit_study(usefulness_val, accuracy_val, ease_val, trust_val, use_again_val, improve_val, overall_val, sid, ctype),
                 gr.update(visible=False),
                 gr.update(visible=True)
             )[1:], # Return from the 2nd element onwards
-            inputs=[usefulness, accuracy, ease_of_use, trust, would_use, improvements, overall_feedback, session_id],
+            inputs=[usefulness, accuracy, ease_of_use, trust, would_use, improvements, overall_feedback, session_id, chatbot_type],
             outputs=[feedback_section, thank_you_section]
         )
 
