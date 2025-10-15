@@ -7,7 +7,7 @@ import gradio as gr
 from study_config import MAX_WIDTH, APP_CSS, PREDEFINED_QUESTIONS
 from study_sections import create_demographics_section, create_chatbot_section, create_feedback_section, create_thank_you_section, create_consent_section, create_chatbot_selection_section
 from study_handlers import proceed_to_chatbot, save_demographics, handle_chatbot_message, proceed_to_feedback, submit_study, clear_chat, save_consent, handle_predefined_question, handle_follow_up_question
-from study_utils import generate_session_id
+from study_utils import generate_user_id
 
 import base64
 with open('assets/TheranosticChatbotIcon.svg', 'rb') as f:
@@ -30,7 +30,7 @@ def create_study_app():
         css=APP_CSS
     ) as app:
         # Session state
-        session_id = gr.State(value=generate_session_id())
+        session_id = gr.State(value=generate_user_id())
         question_count = gr.State(value=0)
         chatbot_type = gr.State(value="normal")  # Default to normal chatbot
 

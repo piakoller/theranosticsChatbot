@@ -35,14 +35,14 @@ def get_chatbot_response(message, history, chatbot_type, context="patient_educat
     """Get response from the appropriate chatbot based on type selection"""
     if chatbot_type == "expert" and RAG_AVAILABLE and rag_chatbot:
         try:
-            # Use RAG chatbot for expert mode
-            return rag_chatbot.chatbot_response(message, history, context, section)
+            # Use RAG chatbot for expert mode (doesn't use lang parameter)
+            return rag_chatbot.chatbot_response(message, history, context, section, chatbot_type)
         except Exception as e:
             print(f"❌ RAG chatbot error, falling back to normal: {e}")
             # Fall back to normal chatbot if RAG fails
     
     # Use normal chatbot
-    return theranostics_bot.chatbot_response(message, history, context, section, lang)
+    return theranostics_bot.chatbot_response(message, history, context, section, lang, chatbot_type)
 
 
 def proceed_to_chatbot(age, gender, education, medical_background, chatbot_experience, session_id):
@@ -80,8 +80,11 @@ def proceed_to_chatbot(age, gender, education, medical_background, chatbot_exper
 
 def save_demographics(age, gender, education, medical_background, chatbot_experience, treatment_reason, session_id):
     """Save demographics data and proceed directly to the chatbot section (skip attitude)"""
+    # Set the logger's user ID to match the session ID
+    logging_module.set_user_id(session_id)
+    
     demographics_data = {
-        'session_id': session_id,
+        'user_id': session_id,
         'timestamp': datetime.now().isoformat(),
         'age': age,
         'gender': gender,
@@ -91,10 +94,10 @@ def save_demographics(age, gender, education, medical_background, chatbot_experi
         'treatment_reason': treatment_reason
     }
     try:
-        logging_module.log_demographics(demographics_data, session_id)
+        logging_module.log_demographics(demographics_data, user_id=session_id)
     except Exception:
         # Fallback to generic logging if specific function isn't available
-        logging_module.save_form_submission(demographics_data, session_id)
+        logging_module.save_form_submission(demographics_data, user_id=session_id)
 
     return (
         gr.update(visible=False),  # Hide demographics
@@ -105,6 +108,9 @@ def save_demographics(age, gender, education, medical_background, chatbot_experi
 
 def save_consent(consent_value, session_id):
     """Validate consent radio and proceed to demographics if consent given"""
+    # Set the logger's user ID to match the session ID early in the process
+    logging_module.set_user_id(session_id)
+    
     # If user did not consent, keep them on the consent page (no progression)
     if consent_value is None or consent_value != CONSENT_CHOICES[0]:
         # Return no-op updates: keep consent visible
@@ -116,7 +122,7 @@ def save_consent(consent_value, session_id):
 
     # Log consent decision (anonymized)
     consent_data = {
-        'session_id': session_id,
+        'user_id': session_id,
         'timestamp': datetime.now().isoformat(),
         'consent': consent_value
     }
@@ -340,7 +346,7 @@ def submit_study(usefulness, accuracy, ease_of_use, trust, would_use, improvemen
     
     # Save feedback data
     feedback_data = {
-        'session_id': session_id,
+        'user_id': session_id,
         'timestamp': datetime.now().isoformat(),
         'usefulness': usefulness,
         'accuracy': accuracy,

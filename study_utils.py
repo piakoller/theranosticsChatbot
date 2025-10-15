@@ -8,15 +8,15 @@ import logging_module
 from datetime import datetime
 
 
-def generate_session_id():
-    """Generate a unique session ID for the study participant"""
+def generate_user_id():
+    """Generate a unique user ID for the study participant"""
     return str(uuid.uuid4())
 
 
-def save_study_data(session_id, data_type, data):
+def save_study_data(user_id, data_type, data):
     """Save study data with consistent formatting"""
     formatted_data = {
-        'session_id': session_id,
+        'user_id': user_id,
         'timestamp': datetime.now().isoformat(),
         'data_type': data_type,
         **data
@@ -44,12 +44,12 @@ def validate_feedback(would_use):
     return would_use is not None
 
 
-def format_completion_message(session_id):
+def format_completion_message(user_id):
     """Format the study completion message"""
     return f"""
     ## Thank you for participating!
     
-    Your responses have been recorded (Session ID: {session_id}).
+    Your responses have been recorded (User ID: {user_id}).
     Your feedback will help improve chatbot-based patient education tools.
     
     You can now close this window.

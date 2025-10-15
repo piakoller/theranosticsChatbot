@@ -159,10 +159,11 @@ class TheranosticsBot:
                 "Response style: short, clear, 1–2 key points, encourage follow-up."
             )
     
-    def chatbot_response(self, message: str, history: Optional[List] = None, context: str = "main_chat", section: Optional[str] = None, lang: str = 'de') -> str:
+    def chatbot_response(self, message: str, history: Optional[List] = None, context: str = "main_chat", section: Optional[str] = None, lang: str = 'de', chatbot_type: str = "normal") -> str:
         """
         Interface method compatible with the study interface.
         Returns just the response text to be compatible with the existing chatbot interface.
+        Now includes chatbot_type parameter to track which chatbot type was used.
         """
         try:
             response = self.ask(message)
@@ -176,7 +177,8 @@ class TheranosticsBot:
                     context=context, 
                     section=section, 
                     model_used="error", 
-                    metadata={"lang": lang, "error": response["error"]}
+                    metadata={"lang": lang, "error": response["error"]},
+                    chatbot_type=chatbot_type
                 )
                 return error_response
             
@@ -189,7 +191,8 @@ class TheranosticsBot:
                 context=context, 
                 section=section, 
                 model_used=self.current_model, 
-                metadata={"lang": lang}
+                metadata={"lang": lang},
+                chatbot_type=chatbot_type
             )
             
             return response_text
@@ -205,7 +208,8 @@ class TheranosticsBot:
                 context=context, 
                 section=section, 
                 model_used="error", 
-                metadata={"lang": lang, "error": str(e)}
+                metadata={"lang": lang, "error": str(e)},
+                chatbot_type=chatbot_type
             )
             
             return error_response

@@ -88,7 +88,7 @@ class FormHandler:
             payload.setdefault("submission_timestamp", datetime.now().isoformat())
             payload.setdefault("form_version", "v1.0")
             # conversation_logger handles MongoDB vs file backup based on env flags
-            result = conversation_logger.save_form_submission(payload, session_id=session_id)
+            result = conversation_logger.save_form_submission(payload, user_id=session_id)
             return result
         except Exception as e:
             print(f"❌ Error saving form submission: {e}")

@@ -30,7 +30,7 @@ class ConversationLogger:
     
     def __init__(self, log_dir: str = "conversation_logs"):
         self.log_dir = log_dir
-        self.session_id = str(uuid.uuid4())
+        self.user_id = str(uuid.uuid4())
         self.current_model = None  # Will be set by the chatbot
         # Configure logging backends according to env flags
         self.mongodb_handler = None
@@ -65,11 +65,19 @@ class ConversationLogger:
         self.current_model = model_name
         print(f"🤖 Current AI model set to: {model_name}")
     
+    def set_user_id(self, user_id: str):
+        """Set the user ID for this logging session"""
+        old_user_id = self.user_id
+        self.user_id = user_id
+        print(f"🔄 User ID updated from {old_user_id[:8]}... to {self.user_id[:8]}...")
+    
     def log_conversation(self, user_input: str, bot_response: str, 
                         context: Optional[str] = None, 
                         section: Optional[str] = None,
                         model_used: Optional[str] = None,
-                        metadata: Optional[Dict[str, Any]] = None) -> bool:
+                        metadata: Optional[Dict[str, Any]] = None,
+                        chatbot_type: Optional[str] = None,
+                        user_id: Optional[str] = None) -> bool:
         """
         Log conversation with MongoDB primary storage and file backup
         
@@ -78,8 +86,10 @@ class ConversationLogger:
             bot_response: Bot's response
             context: Optional context information
             section: Optional section identifier (for form sections)
-            model_used: Optional model name that generated the response
+            model_used: Optional model identifier
             metadata: Optional additional metadata
+            chatbot_type: Type of chatbot used (normal/expert)
+            user_id: Optional user identifier (uses self.user_id if not provided)
             
         Returns:
             bool: True if logged successfully to at least one storage
@@ -90,9 +100,12 @@ class ConversationLogger:
 
         timestamp = datetime.now()
         
+        # Use provided user_id or fall back to self.user_id
+        effective_user_id = user_id or self.user_id
+        
         # Prepare conversation data
         conversation_data = {
-            "session_id": self.session_id,
+            "user_id": effective_user_id,
             "timestamp": timestamp,
             "user_input": user_input,
             "bot_response": bot_response,
@@ -116,13 +129,14 @@ class ConversationLogger:
                 mongodb_success = self.mongodb_handler.log_conversation(
                     user_message=user_input,
                     bot_response=bot_response,
-                    context=context,
+                    context=context or "main_chat",
                     section=section,
-                    session_id=self.session_id,
-                    model_used=effective_model
+                    user_id=effective_user_id,
+                    model_used=effective_model,
+                    chatbot_type=chatbot_type
                 )
                 if mongodb_success:
-                    print(f"✅ Conversation logged to MongoDB (Session: {self.session_id[:8]}...)")
+                    print(f"✅ Conversation logged to MongoDB (User: {effective_user_id[:8]}...)")
             except Exception as e:
                 print(f"❌ MongoDB logging failed: {e}")
         
@@ -131,7 +145,7 @@ class ConversationLogger:
             try:
                 file_success = self._log_to_file(conversation_data)
                 if file_success and not mongodb_success:
-                    print(f"📝 Conversation logged to file backup (Session: {self.session_id[:8]}...)")
+                    print(f"📝 Conversation logged to file backup (User: {self.user_id[:8]}...)")
             except Exception as e:
                 print(f"❌ File logging failed: {e}")
         
@@ -143,7 +157,7 @@ class ConversationLogger:
         try:
             # Create filename with timestamp
             timestamp_str = conversation_data["timestamp"].strftime("%Y%m%d_%H%M%S")
-            filename = f"conversation_{timestamp_str}_{self.session_id[:8]}.json"
+            filename = f"conversation_{timestamp_str}_{self.user_id[:8]}.json"
             filepath = os.path.join(self.log_dir, filename)
             
             # Convert datetime to string for JSON serialization
@@ -159,14 +173,14 @@ class ConversationLogger:
             print(f"File logging error: {e}")
             return False
     
-    def save_form_submission(self, form_data: Dict[str, Any], session_id: Optional[str] = None) -> str:
+    def save_form_submission(self, form_data: Dict[str, Any], user_id: Optional[str] = None) -> str:
         """
         Save or update form submission data in MongoDB and optionally back up to a file.
 
         Args:
             form_data: Dictionary containing the form data to be saved or updated.
-            session_id: The session ID to associate the data with. If not provided,
-                        the logger's current session ID is used.
+            user_id: The user ID to associate the data with. If not provided,
+                     the logger's current user ID is used.
 
         Returns:
             A status message indicating the outcome of the save operation.
@@ -177,33 +191,38 @@ class ConversationLogger:
         mongodb_success = False
         file_success = False
         
-        # Determine the session ID to use for this submission
-        session_id_to_use = session_id or self.session_id
+        # Determine the user ID to use for this submission
+        user_id_to_use = user_id or self.user_id
+        
+        # If a user_id was provided and it's different from our current one, update it
+        # This ensures all subsequent conversations use the same user_id
+        if user_id and user_id != self.user_id:
+            self.set_user_id(user_id)
 
         # Prepare data for file logging (if enabled)
-        form_data_with_session = form_data.copy()
-        form_data_with_session["session_id"] = session_id_to_use
-        form_data_with_session["submission_timestamp"] = datetime.now().isoformat()
+        form_data_with_user = form_data.copy()
+        form_data_with_user["user_id"] = user_id_to_use
+        form_data_with_user["submission_timestamp"] = datetime.now().isoformat()
 
         # Try MongoDB first (using the new upsert logic)
         if self.mongodb_handler:
             try:
-                # The handler now takes session_id and the data payload separately
+                # The handler now takes user_id and the data payload separately
                 mongodb_success = self.mongodb_handler.save_form_submission(
-                    session_id=session_id_to_use,
+                    user_id=user_id_to_use,
                     data_to_update=form_data
                 )
                 if mongodb_success:
-                    print(f"✅ Form data upserted to MongoDB (Session: {session_id_to_use[:8]}...)")
+                    print(f"✅ Form data upserted to MongoDB (User: {user_id_to_use[:8]}...)")
             except Exception as e:
                 print(f"❌ MongoDB form upsert failed: {e}")
 
         # Optionally maintain a file backup of each individual submission
         if ENABLE_FILE_LOGS:
             try:
-                file_success = self._save_form_to_file(form_data_with_session)
+                file_success = self._save_form_to_file(form_data_with_user)
                 if file_success and not mongodb_success:
-                    print(f"📝 Form submission saved to file backup (Session: {session_id_to_use[:8]}...)")
+                    print(f"📝 Form submission saved to file backup (User: {user_id_to_use[:8]}...)")
             except Exception as e:
                 print(f"❌ File form save failed: {e}")
         
@@ -222,7 +241,7 @@ class ConversationLogger:
         try:
             # Create filename with timestamp
             timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"form_submission_{timestamp_str}_{self.session_id[:8]}.json"
+            filename = f"form_submission_{timestamp_str}_{self.user_id[:8]}.json"
             filepath = os.path.join(self.log_dir, filename)
             
             # Write to file
@@ -234,8 +253,8 @@ class ConversationLogger:
             print(f"File form save error: {e}")
             return False
     
-    def get_session_conversations(self) -> List[Dict[str, Any]]:
-        """Get all conversations for the current session"""
+    def get_user_conversations(self) -> List[Dict[str, Any]]:
+        """Get all conversations for the current user"""
         # If neither logging target is enabled, return empty list
         if not (ENABLE_MONGODB or ENABLE_FILE_LOGS):
             return []
@@ -256,7 +275,7 @@ class ConversationLogger:
         conversations = []
         try:
             for filename in os.listdir(self.log_dir):
-                if filename.startswith(f"conversation_") and self.session_id[:8] in filename:
+                if filename.startswith(f"conversation_") and self.user_id[:8] in filename:
                     filepath = os.path.join(self.log_dir, filename)
                     with open(filepath, 'r', encoding='utf-8') as f:
                         conversations.append(json.load(f))
@@ -294,7 +313,7 @@ class ConversationLogger:
             if not (ENABLE_MONGODB or ENABLE_FILE_LOGS):
                 return "❌ Logging disabled, no conversations to export"
 
-            conversations = self.get_session_conversations()
+            conversations = self.get_user_conversations()
             
             if not conversations:
                 return "❌ No conversations found to export"
@@ -306,7 +325,7 @@ class ConversationLogger:
             
             # Write to CSV
             with open(filepath, 'w', newline='', encoding='utf-8') as csvfile:
-                fieldnames = ['timestamp', 'session_id', 'user_input', 'bot_response', 'context', 'model_used']
+                fieldnames = ['timestamp', 'user_id', 'user_input', 'bot_response', 'context', 'model_used']
                 writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
                 
                 writer.writeheader()
@@ -314,7 +333,7 @@ class ConversationLogger:
                     # Handle both MongoDB and file formats
                     row = {
                         'timestamp': conv.get('timestamp', ''),
-                        'session_id': conv.get('session_id', ''),
+                        'user_id': conv.get('user_id', ''),
                         'user_input': conv.get('user_input', conv.get('user_message', '')),
                         'bot_response': conv.get('bot_response', ''),
                         'context': conv.get('context', ''),
@@ -329,12 +348,12 @@ class ConversationLogger:
             print(error_msg)
             return error_msg
     
-    def new_session(self) -> str:
-        """Start a new conversation session"""
-        old_session = self.session_id
-        self.session_id = str(uuid.uuid4())
-        print(f"🔄 New session started: {self.session_id[:8]}... (Previous: {old_session[:8]}...)")
-        return self.session_id
+    def new_user(self) -> str:
+        """Start new user session"""
+        old_user = self.user_id
+        self.user_id = str(uuid.uuid4())
+        print(f"🔄 New user started: {self.user_id[:8]}... (Previous: {old_user[:8]}...)")
+        return self.user_id
 
 
 # Global logger instance
@@ -345,7 +364,9 @@ def log_conversation(user_input: str, bot_response: str,
                     context: Optional[str] = None, 
                     section: Optional[str] = None,
                     model_used: Optional[str] = None,
-                    metadata: Optional[Dict[str, Any]] = None) -> bool:
+                    metadata: Optional[Dict[str, Any]] = None,
+                    chatbot_type: Optional[str] = None,
+                    user_id: Optional[str] = None) -> bool:
     """
     Global function for logging conversations
     
@@ -356,41 +377,49 @@ def log_conversation(user_input: str, bot_response: str,
         section: Optional section identifier
         model_used: Optional model name that generated the response
         metadata: Optional additional metadata
+        chatbot_type: Type of chatbot used (normal/expert)
+        user_id: Optional user identifier (uses conversation_logger's user_id if not provided)
         
     Returns:
         bool: True if logged successfully
     """
-    return conversation_logger.log_conversation(user_input, bot_response, context, section, model_used, metadata)
+    return conversation_logger.log_conversation(user_input, bot_response, context, section, model_used, metadata, chatbot_type, user_id)
 
 
-def log_demographics(demographics_data: Dict[str, Any], session_id: Optional[str] = None) -> str:
-    """Log demographics data (accept optional session_id)"""
-    return conversation_logger.save_form_submission(demographics_data, session_id)
+def log_demographics(demographics_data: Dict[str, Any], user_id: Optional[str] = None) -> str:
+    """Log demographics data (accept optional user_id)"""
+    return conversation_logger.save_form_submission(demographics_data, user_id)
 
 
-def log_interaction(interaction_data: Dict[str, Any], session_id: Optional[str] = None) -> str:
-    """Log interaction data (accept optional session_id)"""
-    return conversation_logger.save_form_submission(interaction_data, session_id)
+def log_interaction(interaction_data: Dict[str, Any], user_id: Optional[str] = None) -> str:
+    """Log interaction data (accept optional user_id)"""
+    return conversation_logger.save_form_submission(interaction_data, user_id)
 
 
-def log_feedback(feedback_data: Dict[str, Any], session_id: Optional[str] = None) -> str:
-    """Log feedback data (accept optional session_id)"""
-    return conversation_logger.save_form_submission(feedback_data, session_id)
+def log_feedback(feedback_data: Dict[str, Any], user_id: Optional[str] = None) -> str:
+    """Log feedback data (accept optional user_id)"""
+    return conversation_logger.save_form_submission(feedback_data, user_id)
 
 
-def save_form_submission(form_data: Dict[str, Any], session_id: Optional[str] = None) -> str:
-    """Alias for saving generic form submissions with optional session_id"""
-    return conversation_logger.save_form_submission(form_data, session_id)
+def save_form_submission(form_data: Dict[str, Any], user_id: Optional[str] = None) -> str:
+    """Alias for saving generic form submissions with optional user_id"""
+    return conversation_logger.save_form_submission(form_data, user_id)
 
 
-def get_session_id() -> str:
-    """Get current session ID"""
-    return conversation_logger.session_id
+def get_user_id() -> str:
+    """Get current user ID"""
+    return conversation_logger.user_id
 
 
-def new_session() -> str:
-    """Start new conversation session"""
-    return conversation_logger.new_session()
+def set_user_id(user_id: str) -> str:
+    """Set the user ID for the logging session"""
+    conversation_logger.set_user_id(user_id)
+    return user_id
+
+
+def new_user() -> str:
+    """Start new user session"""
+    return conversation_logger.new_user()
 
 
 if __name__ == "__main__":

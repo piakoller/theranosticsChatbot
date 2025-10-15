@@ -165,10 +165,11 @@ Antwort:
         response = self.conversation_chain.invoke({"question": question})
         return response
 
-    def chatbot_response(self, message: str, history: Optional[List] = None, context: str = "main_chat", section: Optional[str] = None) -> str:
+    def chatbot_response(self, message: str, history: Optional[List] = None, context: str = "main_chat", section: Optional[str] = None, chatbot_type: str = "expert") -> str:
         """
         Interface method compatible with the main chatbot for use in the study.
         Returns just the response text to be compatible with the existing chatbot interface.
+        Now includes chatbot_type parameter for consistency with normal chatbot.
         """
         try:
             response = self.ask(message)
