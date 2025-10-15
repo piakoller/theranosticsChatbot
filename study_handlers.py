@@ -273,7 +273,10 @@ def handle_follow_up_question(message, history, session_id, question_count, chat
     history.append({"role": "user", "content": message})
     history.append({"role": "assistant", "content": response})
     
-    # Don't increment main question counter for follow-ups, but log them
+    # Increment question counter for follow-up questions too
+    question_count += 1
+    
+    # Log the interaction
     interaction_data = {
         'session_id': session_id,
         'timestamp': datetime.now().isoformat(),
