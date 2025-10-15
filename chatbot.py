@@ -1,54 +1,152 @@
 """
-Chatbot Module
-Handles OpenRouter API integration and response generation for the Theranostics Chatbot
+Normal Chatbot with Ollama and LangChain
+
+This script builds a normal conversational chatbot that uses Ollama
+for language generation with conversation memory, similar to the RAG chatbot
+but without document retrieval.
 """
 
-import requests
+import os
 import random
-from config import (
-    MODEL_KWARGS,
-    OPENROUTER_API_KEY,
-    OPENROUTER_API_URL,
-    OPENROUTER_MODEL,
-    PRIMARY_MODEL,
-    BACKUP_MODELS,
+from typing import Optional, List, Dict, Any
+from langchain_ollama import OllamaLLM
+from langchain.memory import ConversationBufferMemory
+from langchain.prompts import PromptTemplate
+from ollama_config import (
+    OLLAMA_LLM_MODEL,
+    OLLAMA_MODEL_KWARGS,
+    OLLAMA_BASE_URL,
+    MAX_MEMORY_LENGTH
 )
 from logging_module import conversation_logger
 
+# Import Ollama LLM
+try:
+    from langchain_ollama import OllamaLLM
+    OLLAMA_AVAILABLE = True
+except ImportError:
+    print("❌ langchain-ollama not installed. Please install it with: pip install langchain-ollama")
+    OLLAMA_AVAILABLE = False
+
+# Path to prompt files
+PROMPTS_PATH = os.path.join(os.path.dirname(__file__), "prompts")
+NORMAL_PROMPT_FILE = os.path.join(PROMPTS_PATH, "normal_chatbot.txt")
+
+def load_system_prompt():
+    """Load the normal chatbot system prompt from file"""
+    try:
+        with open(NORMAL_PROMPT_FILE, 'r', encoding='utf-8') as f:
+            return f.read().strip()
+    except FileNotFoundError:
+        print(f"⚠️ Normal prompt file not found at {NORMAL_PROMPT_FILE}, using default prompt")
+        return """Sie sind ein mitfühlender KI-Assistent, spezialisiert auf Patientenaufklärung zu Theranostik und Nuklearmedizin.
+Erklären Sie medizinische Konzepte verständlich, beruhigend und in Alltagssprache."""
+
 
 class TheranosticsBot:
-    """Main chatbot class for handling AI responses"""
-    
+    """
+    A normal conversational chatbot that uses Ollama with conversation memory,
+    similar to RAG chatbot but without document retrieval.
+    """
     def __init__(self):
-        self.current_model = OPENROUTER_MODEL
-        self.openrouter_available = self._check_openrouter_key()
-        conversation_logger.set_current_model(self.current_model)
-    
-    def _check_openrouter_key(self):
-        """Check if OpenRouter API key is available"""
-        if not OPENROUTER_API_KEY:
-            print("❌ OPENROUTER_API_KEY not set in environment variables.")
-            return False
-        return True
-    
-    def _get_system_prompt(self, lang='en'):
-        """Get the system prompt for patient education, language-aware.
-
-        lang: 'en' or 'de'
-        """
-        if lang == 'de':
-            return (
-                "Sie sind ein mitfühlender KI-Assistent, spezialisiert auf Patientenaufklärung zu Theranostik und Nuklearmedizin. "
-                "Erklären Sie medizinische Konzepte verständlich, beruhigend und in Alltagssprache.\n\n"
-                "Kommunikationsrichtlinien:\n"
-                "1. Halten Sie Antworten kurz und klar (1-3 Sätze für einfache Fragen).\n"
-                "2. Vermeiden Sie Fachjargon; erklären Sie Begriffe einfach.\n"
-                "3. Seien Sie einfühlsam, beruhigend und empathisch.\n"
-                "4. Bei komplexen Themen: kurze Übersicht geben und fragen, ob eine detailliertere Erklärung gewünscht ist.\n"
-                "5. Schließen Sie mit einer Einladung zu Nachfragen (z. B. 'Möchten Sie, dass ich einen bestimmten Teil genauer erkläre?').\n"
-                "Antwortstil: Kurz, klar, mit 1–2 wichtigen Punkten; immer zum Nachfragen einladen."
+        self.conversation_chain = None
+        self.memory = ConversationBufferMemory(
+            memory_key="chat_history",
+            return_messages=True,
+            output_key="response"
+        )
+        
+        if OLLAMA_AVAILABLE:
+            self.llm = OllamaLLM(
+                model=OLLAMA_LLM_MODEL,
+                base_url=OLLAMA_BASE_URL,
+                **OLLAMA_MODEL_KWARGS
             )
+            self.ollama_available = self._check_ollama_availability()
         else:
+            self.llm = None
+            self.ollama_available = False
+        
+        self.current_model = OLLAMA_LLM_MODEL
+        conversation_logger.set_current_model(self.current_model)
+        print(f"📋 Normal chatbot using prompt from: {NORMAL_PROMPT_FILE}")
+        print(f"🤖 Using Ollama model: {OLLAMA_LLM_MODEL}")
+    
+    def _check_ollama_availability(self):
+        """Check if Ollama server is running"""
+        if not OLLAMA_AVAILABLE or not self.llm:
+            print("❌ Ollama langchain integration not available.")
+            return False
+        
+        try:
+            # Test if Ollama server is running by making a simple request
+            import requests
+            response = requests.get(f"{OLLAMA_BASE_URL}/api/tags", timeout=5)
+            if response.status_code == 200:
+                print("✅ Ollama server is running")
+                return True
+            else:
+                print(f"❌ Ollama server responded with status {response.status_code}")
+                return False
+        except Exception as e:
+            print(f"❌ Cannot connect to Ollama server: {e}")
+            return False
+    
+    def ask(self, question: str) -> dict:
+        """
+        Asks a question to the conversational chain and returns the response.
+        """
+        if not self.ollama_available or not self.llm:
+            return {"error": "Ollama is not available."}
+            
+        try:
+            print(f"\n❓ Asking question: {question}")
+            
+            # Build the conversation context
+            system_prompt = self._get_system_prompt(lang='de')
+            
+            # Create the full prompt with system prompt, memory, and current message
+            full_prompt = f"{system_prompt}\n\n"
+            
+            # Add conversation memory for context
+            memory_messages = self.memory.chat_memory.messages
+            if memory_messages:
+                full_prompt += "Bisherige Unterhaltung:\n"
+                for msg in memory_messages[-10:]:  # Last 10 messages for context
+                    if hasattr(msg, 'type'):
+                        if 'Human' in str(type(msg)):
+                            full_prompt += f"Benutzer: {msg.content}\n"
+                        elif 'AI' in str(type(msg)):
+                            full_prompt += f"Assistent: {msg.content}\n"
+                full_prompt += "\n"
+            
+            # Add current question
+            full_prompt += f"Aktuelle Frage: {question}\n\nAntwort:"
+            
+            # Get response from Ollama
+            response = self.llm.invoke(full_prompt)
+            
+            if not response or not response.strip():
+                response = "Entschuldigung, ich konnte keine Antwort generieren. Können Sie Ihre Frage bitte anders formulieren?"
+            
+            # Add to memory
+            from langchain.schema import HumanMessage, AIMessage
+            self.memory.chat_memory.add_user_message(question)
+            self.memory.chat_memory.add_ai_message(response.strip())
+            
+            return {"response": response.strip()}
+            
+        except Exception as e:
+            print(f"❌ Error generating response: {e}")
+            return {"error": str(e)}
+    
+    def _get_system_prompt(self, lang='de'):
+        """Get the system prompt for patient education, language-aware."""
+        if lang == 'de':
+            # Load the German prompt from file
+            return load_system_prompt()
+        else:
+            # English fallback
             return (
                 "You are a compassionate AI assistant specializing in patient education about theranostics and nuclear medicine. "
                 "Help patients understand medical concepts in simple, reassuring terms.\n\n"
@@ -61,231 +159,120 @@ class TheranosticsBot:
                 "Response style: short, clear, 1–2 key points, encourage follow-up."
             )
     
-    def generate_openrouter_response(self, message, history, context="main_chat", section=None, lang='en'):
-        """Generate response using OpenRouter API with automatic fallback to backup models"""
-        
-        # List of models to try (current active model first, then backups)
-        models_to_try = [self.current_model] + [m for m in BACKUP_MODELS if m != self.current_model]
-        first_model_failed = False  # Track if we need to inform user about issues
-        
-        for i, model in enumerate(models_to_try):
-            try:
-                # Prepare conversation context with enhanced message formatting
-                # Build system prompt according to requested language
-                messages = [
-                    {"role": "system", "content": self._get_system_prompt(lang=lang)}
-                ]
-                if history:
-                    # Include more context (last 5 exchanges instead of 3)
-                    recent_history = history[-10:] if len(history) > 10 else history  # Get last 10 messages (5 exchanges)
-                    for msg in recent_history:
-                        if msg["role"] in ["user", "assistant"]:
-                            messages.append(msg)
-                
-                # If German requested, add an explicit instruction to reply only in German
-                if lang == 'de':
-                    messages.append({"role": "system", "content": "Please respond only in German (Deutsch)."})
-
-                # Enhance the user's question with context if it's too brief
-                enhanced_message = message
-                if len(message.split()) < 5:  # If question is very short
-                    enhanced_message = f"Please provide a comprehensive explanation about: {message}"
-                
-                messages.append({"role": "user", "content": enhanced_message})
-
-                payload = {
-                    "model": model,
-                    "messages": messages,
-                    **MODEL_KWARGS
-                }
-                headers = {
-                    "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-                    "Content-Type": "application/json",
-                    "HTTP-Referer": "https://openrouter.ai/",
-                    "X-Title": "Theranostics Chatbot"
-                }
-                response = requests.post(OPENROUTER_API_URL, headers=headers, json=payload, timeout=30)
-                
-                if response.status_code == 200:
-                    result = response.json()
-                    
-                    # Try to extract the response with error handling
-                    try:
-                        assistant_response = result["choices"][0]["message"]["content"].strip()
-                    except KeyError as e:
-                        # Try alternative response formats
-                        if 'message' in result:
-                            assistant_response = result['message'].get('content', '')
-                        elif 'response' in result:
-                            assistant_response = result['response']
-                        elif 'text' in result:
-                            assistant_response = result['text']
-                        else:
-                            raise Exception(f"Unknown response format for model {model}")
-                    
-                    if not assistant_response:
-                        assistant_response = "I understand your question. Could you please provide more details so I can give you a more specific answer?"
-                    
-                    # If we're using a backup model, update the current model and inform user
-                    if i > 0 and model != self.current_model:
-                        self.current_model = model
-                        conversation_logger.set_current_model(model)
-                        print(f"✅ Switched to backup model: {model}")
-                        # Add a brief notice to the response for users
-                        model_name = model.split('/')[-1].replace(':free', '').replace('-', ' ').title()
-                        assistant_response = f"*I've switched to a backup model ({model_name}) to ensure I can help you.*\n\n{assistant_response}"
-                    
-                    # Log the conversation
-                    conversation_logger.log_conversation(message, assistant_response, context=context, section=section, model_used=model, metadata={"lang": lang})
-                    
-                    return assistant_response
-                else:
-                    # Enhanced error handling for specific error types
-                    try:
-                        error_data = response.json() if response.text else {}
-                        error_message = error_data.get('error', {}).get('message', '')
-                        error_code = error_data.get('error', {}).get('code', response.status_code)
-                        
-                        # Check for specific error conditions that warrant fallback
-                        should_fallback = False
-                        error_reason = ""
-                        
-                        if response.status_code == 429:
-                            should_fallback = True
-                            error_reason = "rate-limited"
-                        elif response.status_code == 503:
-                            should_fallback = True
-                            error_reason = "service unavailable"
-                        elif "rate-limited" in error_message.lower():
-                            should_fallback = True
-                            error_reason = "rate-limited upstream"
-                        elif "no instances available" in error_message.lower():
-                            should_fallback = True
-                            error_reason = "no instances available"
-                        elif "provider returned error" in error_message.lower():
-                            should_fallback = True
-                            error_reason = "provider error"
-                        elif response.status_code >= 500:
-                            should_fallback = True
-                            error_reason = "server error"
-                        
-                        print(f"❌ Model {model} error ({response.status_code}): {error_reason}")
-                        if error_message:
-                            print(f"   Details: {error_message[:200]}...")
-                        
-                        if should_fallback and i < len(models_to_try) - 1:
-                            # Mark that we had issues with the primary model
-                            if i == 0:
-                                first_model_failed = True
-                            print(f"🔄 Trying backup model: {models_to_try[i+1]}")
-                            continue
-                        elif not should_fallback:
-                            # For non-fallback errors, return specific message
-                            if lang == 'de':
-                                return "Ich habe ein Problem mit dem Sprachmodell. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support, falls das Problem weiterhin besteht."
-                            else:
-                                return "I encountered an issue with the language model. Please try again or contact support if this persists."
-                        else:
-                            # All models failed
-                            if first_model_failed:
-                                if lang == 'de':
-                                    return "Ich habe derzeit technische Schwierigkeiten mit allen verfügbaren KI-Modellen. Bitte versuchen Sie es in wenigen Augenblicken erneut, und ich werde mein Bestes geben, Ihnen zu helfen."
-                                else:
-                                    return "I'm experiencing technical difficulties with all available AI models. Please try again in a few moments, and I'll do my best to help you."
-                            else:
-                                if lang == 'de':
-                                    return "Alle Sprachmodelle haben derzeit Probleme. Bitte versuchen Sie es in wenigen Augenblicken erneut."
-                                else:
-                                    return "All language models are currently experiencing issues. Please try again in a few moments."
-                            
-                    except (ValueError, KeyError):
-                        # If we can't parse the error response, treat as generic error
-                        print(f"❌ Model {model} error: {response.status_code} (unparseable response)")
-                        if i < len(models_to_try) - 1:
-                            if i == 0:
-                                first_model_failed = True
-                            print(f"🔄 Trying backup model: {models_to_try[i+1]}")
-                            continue
-                        else:
-                            if lang == 'de':
-                                return "Ich habe Schwierigkeiten, eine Verbindung zum Sprachmodell herzustellen. Bitte versuchen Sie es in wenigen Augenblicken erneut."
-                            else:
-                                return "I'm having trouble connecting to the language model. Please try again in a few moments."
-                        
-            except requests.exceptions.Timeout:
-                print(f"⏱️ Timeout with model {model}")
-                if i < len(models_to_try) - 1:
-                    if i == 0:
-                        first_model_failed = True
-                    print(f"🔄 Trying backup model: {models_to_try[i+1]}")
-                    continue
-                else:
-                    if lang == 'de':
-                        return "Die Anfrage ist abgelaufen. Bitte stellen Sie Ihre Frage erneut."
-                    else:
-                        return "The request timed out. Please try asking your question again."
-            except Exception as e:
-                print(f"❌ Error with model {model}: {e}")
-                if i < len(models_to_try) - 1:
-                    if i == 0:
-                        first_model_failed = True
-                    print(f"🔄 Trying backup model: {models_to_try[i+1]}")
-                    continue
-                else:
-                    if lang == 'de':
-                        return "Es tut mir leid, aber ich habe derzeit Schwierigkeiten, Ihre Anfrage zu bearbeiten. Bitte versuchen Sie es erneut."
-                    else:
-                        return "I apologize, but I'm having trouble processing your request right now. Please try again."
-        
-        # If we get here, all models failed
-        if first_model_failed:
-            if lang == 'de':
-                return "Ich habe derzeit technische Schwierigkeiten mit allen verfügbaren KI-Modellen. Bitte versuchen Sie es in wenigen Augenblicken erneut, und ich werde mein Bestes geben, Ihnen bei Ihrer Frage zu helfen."
-            else:
-                return "I'm currently experiencing technical difficulties with all available AI models. Please try again in a few moments, and I'll do my best to help you with your question."
-        else:
-            if lang == 'de':
-                return "Ich kann Ihre Anfrage derzeit nicht bearbeiten. Bitte versuchen Sie es später erneut."
-            else:
-                return "I'm unable to process your request at the moment. Please try again later."
+    def chatbot_response(self, message: str, history: Optional[List] = None, context: str = "main_chat", section: Optional[str] = None, lang: str = 'de') -> str:
+        """
+        Interface method compatible with the study interface.
+        Returns just the response text to be compatible with the existing chatbot interface.
+        """
+        try:
+            response = self.ask(message)
+            
+            if "error" in response:
+                error_response = self.get_fallback_response(lang=lang)
+                # Still log error responses
+                conversation_logger.log_conversation(
+                    message, 
+                    error_response, 
+                    context=context, 
+                    section=section, 
+                    model_used="error", 
+                    metadata={"lang": lang, "error": response["error"]}
+                )
+                return error_response
+            
+            response_text = response.get('response', 'Entschuldigung, ich konnte keine Antwort generieren.')
+            
+            # Log the conversation
+            conversation_logger.log_conversation(
+                message, 
+                response_text, 
+                context=context, 
+                section=section, 
+                model_used=self.current_model, 
+                metadata={"lang": lang}
+            )
+            
+            return response_text
+            
+        except Exception as e:
+            print(f"❌ Normal chatbot error: {e}")
+            error_response = "Entschuldigung, ich habe gerade Schwierigkeiten beim Zugriff auf meine Wissensbasis. Bitte versuchen Sie es später erneut."
+            
+            # Log the error
+            conversation_logger.log_conversation(
+                message, 
+                error_response, 
+                context=context, 
+                section=section, 
+                model_used="error", 
+                metadata={"lang": lang, "error": str(e)}
+            )
+            
+            return error_response
     
-    def get_fallback_response(self, lang='en'):
-        """Get a fallback response when API is not available"""
+    def get_fallback_response(self, lang='de'):
+        """Get a fallback response when Ollama is not available"""
         if lang == 'de':
             fallback_responses = [
-                "Ich befinde mich derzeit im Fallback-Modus. Bitte stellen Sie sicher, dass OPENROUTER_API_KEY in Ihrer Umgebung gesetzt ist.",
-                "Ich verstehe, dass Sie Fragen zu Ihrer Behandlung haben. Fragen Sie gerne alles, was Sie beschäftigt.",
-                "Theranostik kann komplex erscheinen, aber ich bin hier, um es in einfachen Begriffen zu erklären. Was möchten Sie wissen?",
-                "Viele Patienten haben ähnliche Bedenken bezüglich nuklearmedizinischer Behandlungen. Welche spezifischen Fragen haben Sie?",
+                "Entschuldigung, ich kann derzeit nicht auf das Sprachmodell zugreifen. Bitte versuchen Sie es später erneut.",
+                "Ich verstehe, dass Sie Fragen zu Ihrer Behandlung haben. Leider ist das Sprachmodell gerade nicht verfügbar.",
+                "Das Sprachmodell ist momentan nicht erreichbar. Bitte stellen Sie sicher, dass Ollama läuft und die Modelle verfügbar sind.",
+                "Ich kann Ihnen gerade nicht antworten, da die Verbindung zum Sprachmodell unterbrochen ist.",
             ]
         else:
             fallback_responses = [
-                "I'm currently running in fallback mode. Please ensure OPENROUTER_API_KEY is set in your environment.",
-                "I understand you have questions about your treatment. Please feel free to ask about anything that concerns you.",
-                "Theranostics can seem complex, but I'm here to explain it in simple terms. What would you like to know?",
-                "Many patients have similar concerns about nuclear medicine treatments. What specific questions do you have?",
+                "I'm sorry, I can't access the language model right now. Please try again later.",
+                "I understand you have questions about your treatment, but the language model is currently unavailable.",
+                "The language model is not accessible at the moment. Please ensure Ollama is running and models are available.",
+                "I can't respond right now due to a language model connection issue.",
             ]
         return random.choice(fallback_responses)
     
-    def chatbot_response(self, message, history, context="main_chat", section=None, lang='en'):
-        """Main chatbot function that uses OpenRouter or falls back to predefined responses"""
-        if self.openrouter_available:
-            response = self.generate_openrouter_response(message, history, context, section, lang=lang)
-        else:
-            # Provide language-appropriate fallback message
-            response = self.get_fallback_response(lang=lang)
-            # Still log fallback responses
-            conversation_logger.log_conversation(message, response, context=context, section=section, model_used="fallback", metadata={"lang": lang})
-        
-        return response
+    def clear_conversation_memory(self):
+        """
+        Clears the conversation memory to start fresh.
+        """
+        self.memory.clear()
+        print("🧹 Conversation memory cleared.")
+    
+    def get_conversation_history(self) -> List[Dict[str, Any]]:
+        """
+        Returns the conversation history as a list of message dictionaries.
+        """
+        messages = []
+        for message in self.memory.chat_memory.messages:
+            messages.append({
+                "type": type(message).__name__,
+                "content": message.content
+            })
+        return messages
+    
+    def get_memory_length(self) -> int:
+        """Get the current number of messages in memory"""
+        return len(self.memory.chat_memory.messages)
     
     def get_current_model(self):
         """Get the currently active model"""
         return self.current_model
     
     def is_api_available(self):
-        """Check if the OpenRouter API is available"""
-        return self.openrouter_available
+        """Check if Ollama is available"""
+        return self.ollama_available
+    
+    def get_memory_summary(self) -> str:
+        """Get a summary of the current conversation memory for debugging"""
+        messages = self.memory.chat_memory.messages
+        if not messages:
+            return "No conversation history"
+        
+        summary = f"Memory contains {len(messages)} messages:\n"
+        for i, msg in enumerate(messages[-6:]):  # Show last 6 messages
+            msg_type = type(msg).__name__
+            content = str(msg.content)
+            content_preview = content[:50] + "..." if len(content) > 50 else content
+            summary += f"  {i+1}. {msg_type}: {content_preview}\n"
+        
+        return summary
 
 
 # Global chatbot instance

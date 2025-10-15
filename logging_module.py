@@ -161,41 +161,49 @@ class ConversationLogger:
     
     def save_form_submission(self, form_data: Dict[str, Any], session_id: Optional[str] = None) -> str:
         """
-        Save form submission with MongoDB primary storage and file backup
-        
+        Save or update form submission data in MongoDB and optionally back up to a file.
+
         Args:
-            form_data: Dictionary containing form submission data
-            
+            form_data: Dictionary containing the form data to be saved or updated.
+            session_id: The session ID to associate the data with. If not provided,
+                        the logger's current session ID is used.
+
         Returns:
-            str: Success message indicating where data was saved
+            A status message indicating the outcome of the save operation.
         """
-        # Short-circuit if neither MongoDB nor file logging enabled
         if not (ENABLE_MONGODB or ENABLE_FILE_LOGS):
             return "Logging disabled"
 
         mongodb_success = False
         file_success = False
+        
+        # Determine the session ID to use for this submission
+        session_id_to_use = session_id or self.session_id
 
-        # Add session tracking (allow caller-provided session_id)
+        # Prepare data for file logging (if enabled)
         form_data_with_session = form_data.copy()
-        form_data_with_session["session_id"] = session_id or self.session_id
+        form_data_with_session["session_id"] = session_id_to_use
         form_data_with_session["submission_timestamp"] = datetime.now().isoformat()
 
-        # Try MongoDB first
+        # Try MongoDB first (using the new upsert logic)
         if self.mongodb_handler:
             try:
-                mongodb_success = self.mongodb_handler.save_form_submission(form_data_with_session)
+                # The handler now takes session_id and the data payload separately
+                mongodb_success = self.mongodb_handler.save_form_submission(
+                    session_id=session_id_to_use,
+                    data_to_update=form_data
+                )
                 if mongodb_success:
-                    print(f"✅ Form submission saved to MongoDB (Session: {self.session_id[:8]}...)")
+                    print(f"✅ Form data upserted to MongoDB (Session: {session_id_to_use[:8]}...)")
             except Exception as e:
-                print(f"❌ MongoDB form save failed: {e}")
-        
-        # Optionally maintain file backup if enabled
+                print(f"❌ MongoDB form upsert failed: {e}")
+
+        # Optionally maintain a file backup of each individual submission
         if ENABLE_FILE_LOGS:
             try:
                 file_success = self._save_form_to_file(form_data_with_session)
                 if file_success and not mongodb_success:
-                    print(f"📝 Form submission saved to file backup (Session: {self.session_id[:8]}...)")
+                    print(f"📝 Form submission saved to file backup (Session: {session_id_to_use[:8]}...)")
             except Exception as e:
                 print(f"❌ File form save failed: {e}")
         
@@ -234,7 +242,9 @@ class ConversationLogger:
 
         if self.mongodb_handler:
             try:
-                return self.mongodb_handler.get_session_conversations(self.session_id)
+                # This method does not exist in the new handler, so we comment it out.
+                # return self.mongodb_handler.get_session_conversations(self.session_id)
+                pass
             except Exception as e:
                 print(f"Error retrieving MongoDB conversations: {e}")
         

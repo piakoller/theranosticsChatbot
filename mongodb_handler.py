@@ -11,6 +11,7 @@ import json
 try:
     from pymongo import MongoClient
     from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
+    from pymongo.database import Database
     MONGODB_AVAILABLE = True
 except ImportError:
     MONGODB_AVAILABLE = False
@@ -21,14 +22,14 @@ except ImportError:
 class MongoDBHandler:
     """Handles all MongoDB operations for the chatbot application"""
     
-    def __init__(self, connection_string: str = None, database_name: str = "theranosticsChatbot"):
+    def __init__(self, connection_string: Optional[str] = None, database_name: str = "theranosticsChatbot"):
         self.connection_string = connection_string or os.getenv(
             "MONGO_URI", 
             os.getenv("MONGODB_CONNECTION_STRING", "mongodb://localhost:27017/")
         )
         self.database_name = database_name
-        self.client = None
-        self.db = None
+        self.client: Optional[MongoClient] = None
+        self.db: Optional[Database] = None
         self.connected = False
         
         # Collection names
@@ -79,7 +80,7 @@ class MongoDBHandler:
     
     def _setup_collections(self):
         """Set up collections and indexes"""
-        if not self.connected:
+        if not self.connected or self.db is None:
             return
             
         try:
@@ -103,10 +104,10 @@ class MongoDBHandler:
             print(f"⚠️ Error setting up MongoDB collections: {e}")
     
     def log_conversation(self, user_message: str, bot_response: str, 
-                        context: str = "main_chat", section: str = None, 
-                        model_used: str = None, session_id: str = None) -> bool:
+                        context: str = "main_chat", section: Optional[str] = None, 
+                        model_used: Optional[str] = None, session_id: Optional[str] = None) -> bool:
         """Accumulate conversation exchanges and update/create complete conversation per user"""
-        if not self.connected:
+        if not self.connected or self.db is None:
             return False
             
         try:
@@ -167,46 +168,53 @@ class MongoDBHandler:
             print(f"❌ Error logging conversation to MongoDB: {e}")
             return False
     
-    def save_form_submission(self, form_data: Dict[str, Any], session_id: str = None) -> bool:
-        """Save form submission to MongoDB"""
-        if not self.connected:
+    def save_form_submission(self, session_id: str, data_to_update: Dict[str, Any]) -> bool:
+        """
+        Update a single document for a given session_id with new form data.
+        Uses upsert=True to create the document if it doesn't exist.
+        """
+        if not self.connected or self.db is None:
+            print("⚠️ MongoDB not connected. Cannot save form submission.")
             return False
             
         try:
-            submission_doc = {
-                "submission_timestamp": datetime.now(),
-                "session_id": session_id or self._generate_session_id(),
-                
-                # Demographics (Section A)
-                "age": form_data.get("age"),
-                "gender": form_data.get("gender"),
-                "diagnosis": form_data.get("diagnosis"),
-                
-                # Treatment Experience (Section B)
-                "treatment_date": form_data.get("treatment_date"),
-                "treatment_satisfaction": form_data.get("treatment_satisfaction"),
-                "side_effects": form_data.get("side_effects", []),
-                "side_effects_severity": form_data.get("side_effects_severity"),
-                
-                # Feedback (Section C)
-                "overall_feedback": form_data.get("overall_feedback"),
-                "improvement_suggestions": form_data.get("improvements"),
-                "would_recommend": form_data.get("recommend"),
-                
-                # Metadata
-                "form_completion_time": form_data.get("completion_time"),
-                "user_ip": self._get_user_ip(),
-                "raw_form_data": form_data  # Store original data as backup
+            # The filter to find the document for the current session
+            query = {"session_id": session_id}
+            
+            # Ensure 'session_id' is not in the update payload to avoid conflicts
+            data_to_update.pop('session_id', None)
+
+            # The update operation using $set to add/update fields
+            # and $setOnInsert to set values only when a new document is created
+            update = {
+                "$set": {
+                    **data_to_update,  # Unpack all new form data
+                    "last_updated": datetime.now()
+                },
+                "$setOnInsert": {
+                    "session_id": session_id,
+                    "created_at": datetime.now(),
+                    "user_ip": self._get_user_ip()
+                }
             }
             
-            result = self.db[self.forms_collection_name].insert_one(submission_doc)
+            # Perform the update operation with upsert=True
+            result = self.db[self.forms_collection_name].update_one(
+                query,
+                update,
+                upsert=True
+            )
             
-            if result.inserted_id:
-                print(f"📋 Form submission saved to MongoDB: {result.inserted_id}")
+            if result.upserted_id:
+                print(f"📋 New form document created for session: {session_id}")
+                return True
+            elif result.modified_count > 0:
+                print(f"📋 Form document updated for session: {session_id}")
                 return True
             else:
-                print("⚠️ Failed to save form submission to MongoDB")
-                return False
+                # This case can happen if the data submitted is identical to what's already stored
+                print(f"📋 No changes to form document for session: {session_id}")
+                return True
                 
         except Exception as e:
             print(f"❌ Error saving form submission to MongoDB: {e}")
@@ -214,7 +222,7 @@ class MongoDBHandler:
     
     def get_conversation_stats(self) -> Dict[str, Any]:
         """Get conversation statistics from MongoDB"""
-        if not self.connected:
+        if not self.connected or self.db is None:
             return {"error": "MongoDB not connected"}
             
         try:
@@ -261,7 +269,7 @@ class MongoDBHandler:
     
     def get_form_submission_stats(self) -> Dict[str, Any]:
         """Get form submission statistics from MongoDB"""
-        if not self.connected:
+        if not self.connected or self.db is None:
             return {"error": "MongoDB not connected"}
             
         try:
@@ -315,9 +323,9 @@ class MongoDBHandler:
             print(f"❌ Error getting form submission stats: {e}")
             return {"error": str(e)}
     
-    def export_data_to_json(self, collection_name: str, limit: int = None) -> Dict[str, Any]:
+    def export_data_to_json(self, collection_name: str, limit: Optional[int] = None) -> Dict[str, Any]:
         """Export data from MongoDB collection to JSON format"""
-        if not self.connected:
+        if not self.connected or self.db is None:
             return {"error": "MongoDB not connected"}
             
         try:
@@ -330,14 +338,16 @@ class MongoDBHandler:
             
             documents = []
             for doc in cursor:
+                # Create a mutable copy of the document
+                mutable_doc = dict(doc)
                 # Convert ObjectId to string for JSON serialization
-                doc["_id"] = str(doc["_id"])
+                mutable_doc["_id"] = str(mutable_doc["_id"])
                 # Convert datetime to ISO string
-                if "timestamp" in doc:
-                    doc["timestamp"] = doc["timestamp"].isoformat()
-                if "submission_timestamp" in doc:
-                    doc["submission_timestamp"] = doc["submission_timestamp"].isoformat()
-                documents.append(doc)
+                if "timestamp" in mutable_doc and hasattr(mutable_doc["timestamp"], 'isoformat'):
+                    mutable_doc["timestamp"] = mutable_doc["timestamp"].isoformat()
+                if "submission_timestamp" in mutable_doc and hasattr(mutable_doc["submission_timestamp"], 'isoformat'):
+                    mutable_doc["submission_timestamp"] = mutable_doc["submission_timestamp"].isoformat()
+                documents.append(mutable_doc)
             
             return {
                 "collection": collection_name,

@@ -7,7 +7,6 @@ Contains constants and settings for the Patient Education Chatbot Study
 STUDY_SECTIONS = ['demographics', 'chatbot_interaction', 'feedback']
 
 # UI Configuration
-APP_TITLE = "Theranostik Chatbot"
 MAX_WIDTH = "800px"
 CHATBOT_HEIGHT = 400
 MINIMUM_QUESTIONS = 3
@@ -283,6 +282,24 @@ h4 { font-size: 1.25rem !important; }
         font-size: 1.6rem !important;
     }
 }
+
+/* Chatbot type indicator styling */
+.chatbot-type-indicator {
+    display: inline-block !important;
+    margin: 10px auto !important;
+    padding: 8px 16px !important;
+    border-radius: 5px !important;
+    font-size: 12px !important;
+    text-align: center !important;
+}
+
+.chatbot-type-indicator.normal {
+    background: white !important;
+}
+
+.chatbot-type-indicator.expert {
+    background: white !important;
+}
 """
 
 # Study data configuration
@@ -291,7 +308,7 @@ CHATBOT_CONTEXT = "patient_education_study"
 CHATBOT_SECTION = "interaction"
 
 # Consent / intro text
-CONSENT_TITLE = "# Teilnehmerinformationen & Einverständniserklärung"
+CONSENT_TITLE = "# Einverständniserklärung"
 CONSENT_TEXT = (
     "Diese Studie wird einen Chatbot bewerten, der zur Patientenaufklärung über Dosimetrie und Patientensicherheit bei nuklearmedizinischen Behandlungen entwickelt wurde. "
     "Der Fokus liegt auf Strahlenschutz, Dosisberechnungen und Sicherheitsmaßnahmen. "

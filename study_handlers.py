@@ -8,14 +8,41 @@ from datetime import datetime
 import logging_module
 from chatbot import TheranosticsBot
 from study_config import MINIMUM_QUESTIONS, PREDEFINED_QUESTIONS
+from study_utils import get_question_counter_text
 
 from study_config import CONSENT_CHOICES
 
-# Initialize chatbot
+# Initialize chatbots
 theranostics_bot = TheranosticsBot()
+
+# Try to import RAG chatbot, with fallback if not available
+try:
+    import sys
+    import os
+    sys.path.append(os.path.join(os.path.dirname(__file__), 'RAG'))
+    from chatbot_rag import get_rag_chatbot
+    rag_chatbot = get_rag_chatbot()
+    RAG_AVAILABLE = rag_chatbot is not None
+except Exception as e:
+    print(f"⚠️ RAG chatbot not available: {e}")
+    rag_chatbot = None
+    RAG_AVAILABLE = False
 
 # Global state for tracking asked questions
 asked_questions = set()
+
+def get_chatbot_response(message, history, chatbot_type, context="patient_education_study", section="interaction", lang="de"):
+    """Get response from the appropriate chatbot based on type selection"""
+    if chatbot_type == "expert" and RAG_AVAILABLE and rag_chatbot:
+        try:
+            # Use RAG chatbot for expert mode
+            return rag_chatbot.chatbot_response(message, history, context, section)
+        except Exception as e:
+            print(f"❌ RAG chatbot error, falling back to normal: {e}")
+            # Fall back to normal chatbot if RAG fails
+    
+    # Use normal chatbot
+    return theranostics_bot.chatbot_response(message, history, context, section, lang)
 
 
 def proceed_to_chatbot(age, gender, education, medical_background, chatbot_experience, session_id):
@@ -178,7 +205,7 @@ def handle_chatbot_message(message, history, session_id, question_count):
     return "", history, question_count, gr.update(visible=show_next)
 
 
-def handle_predefined_question(question_text, history, session_id, question_count):
+def handle_predefined_question(question_text, history, session_id, question_count, chatbot_type="normal"):
     """Handle predefined question button clicks"""
     global asked_questions
     
@@ -189,12 +216,12 @@ def handle_predefined_question(question_text, history, session_id, question_coun
     conversation_history = history.copy() if history else []
     conversation_history.append({"role": "user", "content": question_text})
     
-    response = theranostics_bot.chatbot_response(
+    response = get_chatbot_response(
         question_text,
         conversation_history,
+        chatbot_type,
         context="patient_education_study",
-        section="interaction",
-        lang="de"
+        section="interaction"
     )
     
     # Update history
@@ -212,7 +239,8 @@ def handle_predefined_question(question_text, history, session_id, question_coun
         'user_message': question_text,
         'bot_response': response,
         'question_number': question_count,
-        'question_type': 'predefined'
+        'question_type': 'predefined',
+        'chatbot_type': chatbot_type
     }
     
     logging_module.log_interaction(interaction_data)
@@ -221,24 +249,24 @@ def handle_predefined_question(question_text, history, session_id, question_coun
     show_next = question_count >= MINIMUM_QUESTIONS
     show_follow_up = True
     
-    return history, question_count, gr.update(visible=show_follow_up), gr.update(visible=show_next)
+    return history, question_count, get_question_counter_text(question_count), gr.update(visible=show_follow_up), gr.update(visible=show_next)
 
 
-def handle_follow_up_question(message, history, session_id, question_count):
+def handle_follow_up_question(message, history, session_id, question_count, chatbot_type="normal"):
     """Handle follow-up questions after predefined questions"""
     if not message.strip():
-        return "", history, question_count, gr.update()
+        return "", history, question_count, get_question_counter_text(question_count), gr.update(), gr.update()
     
     # Get bot response for the follow-up question
     conversation_history = history.copy() if history else []
     conversation_history.append({"role": "user", "content": message})
     
-    response = theranostics_bot.chatbot_response(
+    response = get_chatbot_response(
         message,
         conversation_history,
+        chatbot_type,
         context="patient_education_study",
-        section="interaction",
-        lang="de"
+        section="interaction"
     )
     
     # Update history
@@ -252,7 +280,8 @@ def handle_follow_up_question(message, history, session_id, question_count):
         'user_message': message,
         'bot_response': response,
         'question_number': question_count,
-        'question_type': 'follow_up'
+        'question_type': 'follow_up',
+        'chatbot_type': chatbot_type
     }
     
     logging_module.log_interaction(interaction_data)
@@ -260,7 +289,7 @@ def handle_follow_up_question(message, history, session_id, question_count):
     # Show next button if minimum questions reached, keep follow-up section visible
     show_next = question_count >= MINIMUM_QUESTIONS
     
-    return "", history, question_count, gr.update(visible=True), gr.update(visible=show_next)
+    return "", history, question_count, get_question_counter_text(question_count), gr.update(visible=True), gr.update(visible=show_next)
 
 
 def proceed_to_feedback(session_id):
@@ -277,7 +306,20 @@ def clear_chat():
     """Clear the chat history and reset question tracking"""
     global asked_questions
     asked_questions.clear()
-    return [], 0, gr.update(visible=False), gr.update(visible=False)
+    
+    # Clear conversation memory for both chatbots
+    theranostics_bot.clear_conversation_memory()
+    
+    # Clear RAG chatbot memory if available
+    try:
+        from RAG.chatbot_rag import get_rag_chatbot
+        rag_bot = get_rag_chatbot()
+        if rag_bot:
+            rag_bot.clear_conversation_history()
+    except ImportError:
+        pass  # RAG chatbot not available
+    
+    return [], 0, get_question_counter_text(0), gr.update(visible=False), gr.update(visible=False)
 
 
 def submit_study(usefulness, accuracy, ease_of_use, trust, would_use, improvements, overall_feedback, session_id):

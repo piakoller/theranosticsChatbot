@@ -58,4 +58,4 @@ def format_completion_message(session_id):
 
 def get_question_counter_text(count):
     """Get formatted question counter text"""
-    return f"**Questions asked: {count}**"
+    return f"**Gestellte Fragen: {count}**"

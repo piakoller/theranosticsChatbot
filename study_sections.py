@@ -9,7 +9,7 @@ from study_config import (
     AGE_GROUPS, GENDER_OPTIONS, EDUCATION_LEVELS, 
     MEDICAL_BACKGROUND_OPTIONS, CHATBOT_EXPERIENCE_OPTIONS,
     RATING_SCALE, WOULD_USE_OPTIONS, STUDY_INSTRUCTIONS,
-    CHATBOT_HEIGHT, APP_TITLE, PREDEFINED_QUESTIONS
+    CHATBOT_HEIGHT, PREDEFINED_QUESTIONS
 )
 from study_config import (
     PRIOR_USE_CHOICES, TRUST_LIKERT_MIN, TRUST_LIKERT_MAX, TRUST_LIKERT_DEFAULT,
@@ -20,11 +20,41 @@ from study_config import (
     CONSENT_TITLE, CONSENT_TEXT, CONSENT_CHOICES
 )
 
+def create_chatbot_selection_section():
+    """Create the chatbot selection section"""
+    with gr.Column(visible=False) as chatbot_selection_section:
+        gr.Markdown("## Chatbot-Auswahl")
+        gr.Markdown("""
+        **Für diese Studie können Sie zwischen zwei verschiedenen Chatbot-Versionen wählen:**
+        
+        - **Standard-Chatbot**: Ein grundlegender Chatbot mit allgemeinem Wissen
+        - **Experten-Chatbot**: Ein spezialisierter Chatbot mit Zugang zu medizinischen Fachquellen
+        
+        Bitte wählen Sie die Version aus, die Sie testen möchten:
+        """)
+        
+        chatbot_type = gr.Radio(
+            label="Welchen Chatbot möchten Sie testen?",
+            choices=[
+                ("Standard-Chatbot (Allgemein)", "normal"),
+                ("Experten-Chatbot (Spezialisiert)", "expert")
+            ],
+            value=None,
+            elem_classes=["label-wrap"]
+        )
+        
+        selection_next = gr.Button(
+            "Weiter zu den persönlichen Angaben",
+            variant="primary",
+            size="lg"
+        )
+    
+    return chatbot_selection_section, chatbot_type, selection_next
+
 
 def create_demographics_section():
     """Create the demographics collection section"""
     with gr.Column(visible=False) as demographics_section:
-        gr.Markdown(f"# {APP_TITLE}")
         gr.Markdown("## Angaben zur Person")
         gr.Markdown("Bitte geben Sie einige grundlegende Informationen über sich an:")
         
@@ -177,15 +207,18 @@ def create_chatbot_section():
         # Create predefined question buttons
         gr.Markdown("**Wählen Sie eine Frage aus:**")
         question_buttons = []
+        question_texts = []  # Store the question texts for each button
         with gr.Row():
             with gr.Column():
                 for i, question in enumerate(randomized_questions[:5]):
                     btn = gr.Button(question, variant="secondary", size="sm")
                     question_buttons.append(btn)
+                    question_texts.append(question)
             with gr.Column():
                 for i, question in enumerate(randomized_questions[5:]):
                     btn = gr.Button(question, variant="secondary", size="sm")
                     question_buttons.append(btn)
+                    question_texts.append(question)
         
         chatbot = gr.Chatbot(
             label="Chatbot",
@@ -215,7 +248,7 @@ def create_chatbot_section():
         
         next_btn = gr.Button("Interaktion beenden & Feedback geben", variant="primary", visible=False)
         
-    return chatbot_section, chatbot, question_buttons, follow_up_section, msg, send_btn, clear_btn, question_counter, next_btn
+    return chatbot_section, chatbot, question_buttons, question_texts, follow_up_section, msg, send_btn, clear_btn, question_counter, next_btn
 
 
 def create_feedback_section():
