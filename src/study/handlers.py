@@ -6,12 +6,9 @@ Contains event handlers for the Patient Education Chatbot Study
 import gradio as gr
 from datetime import datetime
 from core import conversation as logging_module
-from core.chatbot import TheranosticsBot
+from core.chatbot import theranostics_bot  # Use existing global instance
 from .config import MINIMUM_QUESTIONS, PREDEFINED_QUESTIONS, CONSENT_CHOICES
 from .utils import get_question_counter_text
-
-# Initialize chatbots
-theranostics_bot = TheranosticsBot()
 
 # Try to import RAG chatbot, with fallback if not available
 try:
@@ -91,10 +88,9 @@ def save_chatbot_selection(chatbot_choice, session_id):
         print(f"Warning: Failed to save chatbot selection: {e}")
     
     return (
-        gr.update(visible=False),  # Hide chatbot selection
-        gr.update(visible=True),   # Show demographics  
         chatbot_choice,            # Update chatbot_type state
-        session_id
+        gr.update(visible=False),  # Hide chatbot selection section
+        gr.update(visible=True)    # Show demographics section
     )
 
 
@@ -120,9 +116,8 @@ def save_demographics(age, gender, education, medical_background, chatbot_experi
         logging_module.save_form_submission(demographics_data, user_id=session_id)
 
     return (
-        gr.update(visible=False),  # Hide demographics
-        gr.update(visible=True),   # Show chatbot (skip attitude section)
-        session_id
+        gr.update(visible=False),  # Hide demographics section
+        gr.update(visible=True)    # Show chatbot section
     )
 
 
@@ -136,8 +131,7 @@ def save_consent(consent_value, session_id):
         # Return no-op updates: keep consent visible
         return (
             gr.update(visible=True),   # consent_section stays visible
-            gr.update(),                # demographics_section unchanged
-            session_id
+            gr.update()                # chatbot_selection_section unchanged
         )
 
     # Log consent decision (anonymized)
@@ -153,9 +147,8 @@ def save_consent(consent_value, session_id):
 
     # Proceed to demographics
     return (
-        gr.update(visible=False),  # Hide consent
-        gr.update(visible=True),   # Show demographics
-        session_id
+        gr.update(visible=False),  # Hide consent section
+        gr.update(visible=True)    # Show chatbot selection section
     )
 
 
@@ -370,16 +363,23 @@ def clear_chat():
     asked_questions.clear()
     
     # Clear conversation memory for both chatbots
-    theranostics_bot.clear_conversation_memory()
+    if hasattr(theranostics_bot, "clear_conversation_memory"):
+        getattr(theranostics_bot, "clear_conversation_memory")()
+    elif hasattr(theranostics_bot, "clear_conversation_history"):
+        getattr(theranostics_bot, "clear_conversation_history")()
     
     # Clear RAG chatbot memory if available
     try:
-        from RAG.chatbot_rag import get_rag_chatbot
-        rag_bot = get_rag_chatbot()
-        if rag_bot:
-            rag_bot.clear_conversation_history()
-    except ImportError:
-        pass  # RAG chatbot not available
+        # Use the module-level rag_chatbot if it was initialized earlier; avoid fragile import paths
+        if RAG_AVAILABLE and rag_chatbot:
+            # Prefer known method names, call via getattr to avoid static attribute access
+            for method_name in ("clear_conversation_history", "clear_conversation_memory", "clear_conversation", "clear_memory"):
+                if hasattr(rag_chatbot, method_name):
+                    getattr(rag_chatbot, method_name)()
+                    break
+    except Exception:
+        # Ignore any errors when attempting to clear RAG chatbot state
+        pass
     
     return [], 0, get_question_counter_text(0), gr.update(visible=False), gr.update(visible=False)
 

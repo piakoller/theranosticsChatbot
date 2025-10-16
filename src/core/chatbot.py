@@ -8,8 +8,13 @@ but without document retrieval.
 
 import os
 import random
+import warnings
 from typing import Optional, List, Dict, Any
 from langchain_ollama import OllamaLLM
+
+# Suppress LangChain deprecation warnings for memory classes
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="langchain")
+
 from langchain.memory import ConversationBufferMemory
 from langchain.prompts import PromptTemplate
 from config.ollama_config import (
@@ -50,11 +55,15 @@ class TheranosticsBot:
     """
     def __init__(self):
         self.conversation_chain = None
-        self.memory = ConversationBufferMemory(
-            memory_key="chat_history",
-            return_messages=True,
-            output_key="response"
-        )
+        
+        # Suppress deprecation warning for ConversationBufferMemory
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning, message=".*migrating_memory.*")
+            self.memory = ConversationBufferMemory(
+                memory_key="chat_history",
+                return_messages=True,
+                output_key="response"
+            )
         
         if OLLAMA_AVAILABLE:
             self.llm = OllamaLLM(
@@ -69,8 +78,6 @@ class TheranosticsBot:
         
         self.current_model = OLLAMA_LLM_MODEL
         conversation_logger.set_current_model(self.current_model)
-        print(f"📋 Normal chatbot using prompt from: {NORMAL_PROMPT_FILE}")
-        print(f"🤖 Using Ollama model: {OLLAMA_LLM_MODEL}")
     
     def _check_ollama_availability(self):
         """Check if Ollama server is running"""

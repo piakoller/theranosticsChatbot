@@ -36,16 +36,33 @@ class MongoDBHandler:
         self.conversations_collection_name = "conversations"  # For LLM Q&A
         self.forms_collection_name = "forms"  # For form submissions
         
-        # Try loading from parent directory .env file if not found
+        # Try loading from .env file if not found
         if not self.connection_string or self.connection_string == "mongodb://localhost:27017/":
-            parent_env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')
-            if os.path.exists(parent_env_path):
-                try:
-                    from dotenv import load_dotenv
-                    load_dotenv(parent_env_path)
-                    self.connection_string = os.getenv('MONGO_URI', self.connection_string)
-                except ImportError:
-                    print("⚠️ python-dotenv not installed, using environment variables only")
+            # Search for .env file in multiple possible locations
+            possible_env_paths = [
+                # Current directory and parents
+                os.path.join(os.path.dirname(__file__), '.env'),
+                os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'),
+                os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), '.env'),
+                os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), '.env'),
+                # Project root variations
+                os.path.join(os.getcwd(), '.env'),
+                os.path.join(os.path.dirname(os.getcwd()), '.env'),
+            ]
+            
+            for env_path in possible_env_paths:
+                if os.path.exists(env_path):
+                    try:
+                        from dotenv import load_dotenv
+                        load_dotenv(env_path)
+                        new_connection_string = os.getenv('MONGO_URI', self.connection_string)
+                        if new_connection_string != self.connection_string:
+                            self.connection_string = new_connection_string
+                            print(f"📄 Loaded .env from: {env_path}")
+                            break
+                    except ImportError:
+                        print("⚠️ python-dotenv not installed, using environment variables only")
+                        break
         
         if MONGODB_AVAILABLE:
             self.connect()

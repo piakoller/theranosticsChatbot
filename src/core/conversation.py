@@ -18,7 +18,7 @@ ENABLE_FILE_LOGS = os.getenv("ENABLE_FILE_LOGS", "0") == "1"
 
 # Import MongoDB handler with graceful fallback
 try:
-    from database.mongodb_handler import MongoDBHandler
+    from database.mongodb_handler import mongodb_handler  # Use existing global instance
     MONGODB_AVAILABLE = True
 except ImportError:
     MONGODB_AVAILABLE = False
@@ -46,7 +46,7 @@ class ConversationLogger:
         if ENABLE_MONGODB:
             if MONGODB_AVAILABLE:
                 try:
-                    self.mongodb_handler = MongoDBHandler()
+                    self.mongodb_handler = mongodb_handler  # Use existing global instance
                     print("🔄 Conversation logging system initialized with MongoDB")
                 except Exception as e:
                     print(f"⚠️ MongoDB initialization failed: {e}")
@@ -63,8 +63,7 @@ class ConversationLogger:
     def set_current_model(self, model_name: str):
         """Set the current AI model being used for conversations"""
         self.current_model = model_name
-        print(f"🤖 Current AI model set to: {model_name}")
-    
+            
     def set_user_id(self, user_id: str):
         """Set the user ID for this logging session"""
         old_user_id = self.user_id
@@ -125,9 +124,6 @@ class ConversationLogger:
                 effective_model = model_used or self.current_model
                 if effective_model:
                     enhanced_metadata['model_used'] = effective_model
-                
-                print(f"🐛 DEBUG: Original metadata: {metadata}")
-                print(f"🐛 DEBUG: Enhanced metadata: {enhanced_metadata}")
                 
                 mongodb_success = self.mongodb_handler.log_conversation(
                     user_message=user_input,

@@ -98,7 +98,7 @@ def create_study_app():
         # Event handlers
         consent_proceed_btn.click(
             save_consent,
-            inputs=[session_id, consent_agreed],
+            inputs=[consent_agreed, session_id],
             outputs=[
                 consent_section, 
                 chatbot_selection_section
@@ -107,7 +107,7 @@ def create_study_app():
 
         selection_proceed_btn.click(
             save_chatbot_selection,
-            inputs=[session_id, chatbot_type_radio],
+            inputs=[chatbot_type_radio, session_id],
             outputs=[
                 chatbot_type,
                 chatbot_selection_section, 
@@ -124,12 +124,13 @@ def create_study_app():
         demographics_submit_btn.click(
             save_demographics,
             inputs=[
-                session_id,
                 age,
                 gender,
                 education,
                 medical_background,
-                chatbot_experience
+                chatbot_experience,
+                treatment_reason,
+                session_id
             ],
             outputs=[
                 demographics_section,
@@ -137,32 +138,30 @@ def create_study_app():
             ]
         )
 
-        feedback_btn.click(
-            proceed_to_chatbot,
-            outputs=[
-                feedback_btn,
-                question_buttons,
-                follow_up_input,
-                send_btn,
-                clear_btn
-            ]
-        )
-
-        # Predefined question handlers
-        for i, question in enumerate(PREDEFINED_QUESTIONS):
-            question_buttons.select(
-                lambda evt, q_num=i: handle_predefined_question(evt, q_num) if evt.index == q_num else (gr.update(), gr.update(), gr.update()),
-                inputs=[],
+        # Predefined question handlers - set up individual handlers for each button
+        for i, button in enumerate(question_buttons):
+            question_text = question_texts[i]  # Get the corresponding question text
+            
+            def make_question_handler(qt):
+                def question_handler(history, user_id, q_count, bot_type):
+                    return handle_predefined_question(qt, history, user_id, q_count, bot_type)
+                return question_handler
+            
+            button.click(
+                make_question_handler(question_text),
+                inputs=[conversation_history, session_id, question_count, chatbot_type],
                 outputs=[
                     conversation_history,
                     question_count,
-                    session_id
+                    question_counter,
+                    follow_up_section,
+                    feedback_btn
                 ]
             )
 
         # Follow-up question handler
         def handle_follow_up_wrapper(text, history, q_count, user_id, bot_type):
-            return handle_follow_up_question(text, history, q_count, user_id, bot_type)
+            return handle_follow_up_question(text, history, user_id, q_count, bot_type)
 
         send_btn.click(
             handle_follow_up_wrapper,
@@ -174,9 +173,12 @@ def create_study_app():
                 chatbot_type
             ],
             outputs=[
-                conversation_history,
                 follow_up_input,
-                question_count
+                conversation_history,
+                question_count,
+                question_counter,
+                follow_up_section,
+                feedback_btn
             ]
         )
 
@@ -190,9 +192,12 @@ def create_study_app():
                 chatbot_type
             ],
             outputs=[
-                conversation_history,
                 follow_up_input,
-                question_count
+                conversation_history,
+                question_count,
+                question_counter,
+                follow_up_section,
+                feedback_btn
             ]
         )
 
@@ -203,6 +208,7 @@ def create_study_app():
 
         feedback_btn.click(
             proceed_to_feedback,
+            inputs=[session_id],
             outputs=[
                 chatbot_section,
                 feedback_section
@@ -232,15 +238,14 @@ def create_study_app():
 
 def main():
     """Main application entry point"""
-    print("🚀 Starting IAEA Theranostics Chatbot...")
-    
+   
     # Create and launch the app
     app = create_study_app()
     
     # Launch configuration
     try:
         app.launch(
-            server_name="0.0.0.0",
+            server_name="127.0.0.1",
             server_port=7860,
             share=False,
             show_error=True,

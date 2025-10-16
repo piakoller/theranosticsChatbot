@@ -7,13 +7,18 @@ creates a vector store, and answers questions based on the document content.
 """
 
 import os
+import warnings
 from typing import Optional, List, Dict, Any
 from langchain_ollama import OllamaLLM, OllamaEmbeddings
-from langchain_community.vectorstores import Chroma
+from langchain_chroma import Chroma
 from langchain_community.document_loaders import DirectoryLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.prompts import PromptTemplate
 from langchain.chains import RetrievalQA, ConversationalRetrievalChain
+
+# Suppress LangChain deprecation warnings for memory classes
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="langchain")
+
 from langchain.memory import ConversationBufferMemory
 
 # Import shared Ollama configuration
@@ -58,11 +63,15 @@ class RagChatbot:
         self.vector_store = None
         self.qa_chain = None
         self.conversation_chain = None
-        self.memory = ConversationBufferMemory(
-            memory_key="chat_history",
-            return_messages=True,
-            output_key="answer"
-        )
+        
+        # Suppress deprecation warning for ConversationBufferMemory
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning, message=".*migrating_memory.*")
+            self.memory = ConversationBufferMemory(
+                memory_key="chat_history",
+                return_messages=True,
+                output_key="answer"
+            )
         self.llm = OllamaLLM(
             model=LLM_MODEL,
             base_url=OLLAMA_BASE_URL,
@@ -149,9 +158,6 @@ Antwort:
             combine_docs_chain_kwargs={"prompt": custom_prompt},
             return_source_documents=True
         )
-        
-        print("🔗 Conversational QA chain created successfully.")
-        print(f"📋 Using expert prompt from: {EXPERT_PROMPT_FILE}")
 
     def ask(self, question: str) -> dict:
         """
