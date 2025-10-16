@@ -170,11 +170,12 @@ class MongoDBHandler:
     def log_conversation(self, user_message: str, bot_response: str, 
                         context: str = "main_chat", section: Optional[str] = None, 
                         model_used: Optional[str] = None, user_id: Optional[str] = None, 
-                        chatbot_type: Optional[str] = None) -> bool:
+                        chatbot_type: Optional[str] = None, metadata: Optional[dict] = None) -> bool:
         """
         Accumulate conversation exchanges and update/create complete conversation per user.
         Ensures one conversation document per user_id by using upsert operations.
         Now includes chatbot_type (normal/expert) for each conversation exchange.
+        Metadata parameter allows storing additional fields like questiontype.
         """
         if not self.connected or self.db is None:
             return False

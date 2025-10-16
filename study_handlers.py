@@ -219,7 +219,7 @@ def handle_chatbot_message(message, history, session_id, question_count):
     # Increment question counter
     question_count += 1
     
-    # Log the interaction
+    # Log the interaction to forms collection
     interaction_data = {
         'session_id': session_id,
         'timestamp': datetime.now().isoformat(),
@@ -229,6 +229,17 @@ def handle_chatbot_message(message, history, session_id, question_count):
     }
     
     logging_module.log_interaction(interaction_data)
+    
+    # Also log the conversation to conversations collection
+    logging_module.log_conversation(
+        user_input=message,
+        bot_response=response,
+        context="patient_education_study",
+        section="interaction",
+        chatbot_type="normal",  # Default for this function
+        user_id=session_id,
+        metadata={"questiontype": "manual", "question_number": question_count}
+    )
     
     # Show "next" button after minimum questions
     show_next = question_count >= MINIMUM_QUESTIONS
@@ -263,7 +274,7 @@ def handle_predefined_question(question_text, history, session_id, question_coun
     # Increment question counter
     question_count += 1
     
-    # Log the interaction
+    # Log the interaction to forms collection
     interaction_data = {
         'session_id': session_id,
         'timestamp': datetime.now().isoformat(),
@@ -275,6 +286,17 @@ def handle_predefined_question(question_text, history, session_id, question_coun
     }
     
     logging_module.log_interaction(interaction_data)
+    
+    # Also log the conversation to conversations collection
+    logging_module.log_conversation(
+        user_input=question_text,
+        bot_response=response,
+        context="patient_education_study",
+        section="interaction",
+        chatbot_type=chatbot_type,
+        user_id=session_id,
+        metadata={"questiontype": "predefined", "question_number": question_count}
+    )
     
     # Show follow-up section and check if next button should be visible
     show_next = question_count >= MINIMUM_QUESTIONS
@@ -307,7 +329,7 @@ def handle_follow_up_question(message, history, session_id, question_count, chat
     # Increment question counter for follow-up questions too
     question_count += 1
     
-    # Log the interaction
+    # Log the interaction to forms collection
     interaction_data = {
         'session_id': session_id,
         'timestamp': datetime.now().isoformat(),
@@ -319,6 +341,17 @@ def handle_follow_up_question(message, history, session_id, question_count, chat
     }
     
     logging_module.log_interaction(interaction_data)
+    
+    # Also log the conversation to conversations collection
+    logging_module.log_conversation(
+        user_input=message,
+        bot_response=response,
+        context="patient_education_study",
+        section="interaction",
+        chatbot_type=chatbot_type,
+        user_id=session_id,
+        metadata={"questiontype": "follow_up", "question_number": question_count}
+    )
     
     # Show next button if minimum questions reached, keep follow-up section visible
     show_next = question_count >= MINIMUM_QUESTIONS

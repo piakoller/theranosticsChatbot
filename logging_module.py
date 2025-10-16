@@ -126,6 +126,9 @@ class ConversationLogger:
                 if effective_model:
                     enhanced_metadata['model_used'] = effective_model
                 
+                print(f"🐛 DEBUG: Original metadata: {metadata}")
+                print(f"🐛 DEBUG: Enhanced metadata: {enhanced_metadata}")
+                
                 mongodb_success = self.mongodb_handler.log_conversation(
                     user_message=user_input,
                     bot_response=bot_response,
@@ -133,7 +136,8 @@ class ConversationLogger:
                     section=section,
                     user_id=effective_user_id,
                     model_used=effective_model,
-                    chatbot_type=chatbot_type
+                    chatbot_type=chatbot_type,
+                    metadata=enhanced_metadata
                 )
                 if mongodb_success:
                     print(f"✅ Conversation logged to MongoDB (User: {effective_user_id[:8]}...)")
